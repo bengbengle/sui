@@ -225,8 +225,14 @@ impl ReadApi {
     pub async fn get_dynamic_fields(
         &self,
         object_id: ObjectID,
+        cursor: Option<ObjectID>,
+        limit: Option<usize>,
     ) -> anyhow::Result<DynamicFieldPage> {
-        Ok(self.api.http.get_dynamic_fields(object_id).await?)
+        Ok(self
+            .api
+            .http
+            .get_dynamic_fields(object_id, cursor, limit)
+            .await?)
     }
 
     pub async fn get_parsed_object(
