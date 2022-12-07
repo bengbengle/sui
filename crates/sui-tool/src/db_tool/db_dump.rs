@@ -12,7 +12,10 @@ use sui_core::authority::authority_per_epoch_store::AuthorityEpochTables;
 use sui_core::authority::authority_store_tables::AuthorityPerpetualTables;
 use sui_core::epoch::committee_store::CommitteeStore;
 use sui_storage::default_db_options;
+use sui_storage::write_ahead_log::DBWriteAheadLogTables;
 use sui_storage::{lock_service::LockServiceImpl, node_sync_store::NodeSyncStore, IndexStore};
+use sui_types::messages::{SignedTransactionEffects, TrustedCertificate};
+use sui_types::temporary_store::InnerTemporaryStore;
 use sui_types::{
     base_types::EpochId,
     crypto::{AuthoritySignInfo, EmptySignInfo},
@@ -53,6 +56,56 @@ pub fn list_tables(path: PathBuf) -> anyhow::Result<Vec<String>> {
             })
             .collect()
     })
+}
+
+pub fn table_summary(
+    store_name: StoreName,
+    epoch: Option<EpochId>,
+    db_path: PathBuf,
+    table_name: &str,
+) -> anyhow::Result<(usize, usize, usize)> {
+    match store_name {
+        StoreName::Validator => {
+            let epoch_tables = AuthorityEpochTables::<AuthoritySignInfo>::describe_tables();
+            if epoch_tables.contains_key(table_name) {
+                let epoch = epoch.ok_or_else(|| anyhow!("--epoch is required"))?;
+                AuthorityEpochTables::<AuthoritySignInfo>::open_readonly(epoch, &db_path)
+                    .table_summary(table_name)
+            } else {
+                AuthorityPerpetualTables::<AuthoritySignInfo>::open_readonly(&db_path)
+                    .table_summary(table_name)
+            }
+        }
+        StoreName::Gateway => {
+            let epoch_tables = AuthorityEpochTables::<EmptySignInfo>::describe_tables();
+            if epoch_tables.contains_key(table_name) {
+                let epoch = epoch.ok_or_else(|| anyhow!("--epoch is required"))?;
+                AuthorityEpochTables::<EmptySignInfo>::open_readonly(epoch, &db_path)
+                    .table_summary(table_name)
+            } else {
+                AuthorityPerpetualTables::<AuthoritySignInfo>::open_readonly(&db_path)
+                    .table_summary(table_name)
+            }
+        }
+        StoreName::Index => {
+            IndexStore::get_read_only_handle(db_path, None, None).table_summary(table_name)
+        }
+        StoreName::LocksService => {
+            LockServiceImpl::get_read_only_handle(db_path, None, None).table_summary(table_name)
+        }
+        StoreName::NodeSync => {
+            NodeSyncStore::get_read_only_handle(db_path, None, None).table_summary(table_name)
+        }
+        StoreName::Wal => DBWriteAheadLogTables::<
+            TrustedCertificate,
+            (InnerTemporaryStore, SignedTransactionEffects),
+        >::get_read_only_handle(db_path, None, None)
+        .table_summary(table_name),
+        StoreName::Epoch => {
+            CommitteeStore::get_read_only_handle(db_path, None, None).table_summary(table_name)
+        }
+    }
+    .map_err(|err| anyhow!(err.to_string()))
 }
 
 // TODO: condense this using macro or trait dyn skills
