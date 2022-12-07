@@ -23,8 +23,6 @@ use rpc_types::{
     SuiParsedTransactionResponse, SuiTransactionEffects,
 };
 use serde_json::Value;
-pub use sui_config::gateway;
-use sui_core::gateway_state::TxSeqNumber;
 pub use sui_json as json;
 use sui_json_rpc::api::EventReadApiClient;
 use sui_json_rpc::api::EventStreamingApiClient;
