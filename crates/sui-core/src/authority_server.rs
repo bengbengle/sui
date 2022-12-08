@@ -6,39 +6,36 @@ use crate::{
     authority::{AuthorityState, ReconfigConsensusMessage},
     consensus_adapter::{ConsensusAdapter, ConsensusAdapterMetrics},
     consensus_validator::SuiTxValidator,
+    metrics::start_timer,
 };
-use anyhow::anyhow;
 use anyhow::Result;
 use async_trait::async_trait;
-use fastcrypto::traits::KeyPair;
 use futures::{stream::BoxStream, TryStreamExt};
 use multiaddr::Multiaddr;
+use mysten_metrics::spawn_monitored_task;
+use narwhal_types::TransactionsClient;
 use prometheus::{
     register_histogram_with_registry, register_int_counter_with_registry, Histogram, IntCounter,
     Registry,
 };
 use std::{io, sync::Arc, time::Duration};
-use sui_config::NodeConfig;
 use sui_network::{
     api::{Validator, ValidatorServer},
     tonic,
 };
-
 use sui_types::{error::*, messages::*};
 use tap::TapFallible;
 use tokio::{sync::mpsc::Receiver, task::JoinHandle, time::sleep};
-
-use mysten_metrics::spawn_monitored_task;
 use narwhal_types::TransactionsClient;
 use sui_types::messages_checkpoint::CheckpointRequest;
-use sui_types::messages_checkpoint::CheckpointResponse;
 use tracing::{debug, info, Instrument};
-
 use crate::checkpoints::{
     CheckpointMetrics, CheckpointService, CheckpointStore, SendCheckpointToStateSync,
     SubmitCheckpointToConsensus,
 };
 use crate::consensus_handler::ConsensusHandler;
+use sui_types::{error::*, messages::*};
+
 
 #[cfg(test)]
 #[path = "unit_tests/server_tests.rs"]
@@ -256,13 +253,11 @@ impl ValidatorService {
     /// Spawn all the subsystems run by a Sui authority: a consensus node, a sui authority server,
     /// and a consensus listener bridging the consensus node and the sui authority.
     pub async fn new(
-        config: &NodeConfig,
         state: Arc<AuthorityState>,
-        checkpoint_store: Arc<CheckpointStore>,
-        state_sync_handle: sui_network::state_sync::Handle,
+        consensus_adapter: Arc<ConsensusAdapter>,
         prometheus_registry: Registry,
-        rx_reconfigure_consensus: Receiver<ReconfigConsensusMessage>,
     ) -> Result<Self> {
+<<<<<<< HEAD
         let consensus_config = config
             .consensus_config()
             .ok_or_else(|| anyhow!("Validator is missing consensus config"))?;
@@ -322,6 +317,8 @@ impl ValidatorService {
             &registry,
         ));
 
+=======
+>>>>>>> 86b517004 (integrate NarwhalManager into sui reconfiguration process)
         Ok(Self {
             state,
             consensus_adapter,

@@ -9300,6 +9300,7 @@ dependencies = [
  "move-disassembler",
  "move-ir-types",
  "move-vm-types",
+ "narwhal-config",
  "narwhal-executor",
  "once_cell",
  "opentelemetry 0.17.0",
