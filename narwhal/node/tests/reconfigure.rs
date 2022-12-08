@@ -10,6 +10,7 @@ use crypto::{KeyPair, NetworkKeyPair, PublicKey};
 use executor::ExecutionState;
 use fastcrypto::traits::KeyPair as _;
 use futures::future::{join_all, try_join_all};
+use mysten_metrics::RegistryService;
 use narwhal_node as node;
 use node::{restarter::NodeRestarter, Node};
 use prometheus::Registry;
@@ -212,6 +213,8 @@ async fn restart() {
             ..Parameters::default()
         };
 
+        let register_service = RegistryService::new(Registry::new());
+
         let keypair = a.keypair().copy();
         let network_keypair = a.network_keypair().copy();
         tokio::spawn(async move {
@@ -226,7 +229,7 @@ async fn restart() {
                 parameters,
                 TrivialTransactionValidator::default(),
                 rx_node_reconfigure,
-                &Registry::new(),
+                register_service,
             )
             .await;
         });
