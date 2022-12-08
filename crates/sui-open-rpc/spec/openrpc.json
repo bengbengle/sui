@@ -45,7 +45,7 @@
         },
         {
           "name": "gas",
-          "description": "gas object to be used in this transaction, the gateway will pick one from the signer's possession if not provided",
+          "description": "gas object to be used in this transaction, node will pick one from the signer's possession if not provided",
           "schema": {
             "$ref": "#/components/schemas/ObjectID"
           }
@@ -1537,7 +1537,7 @@
         },
         {
           "name": "gas",
-          "description": "gas object to be used in this transaction, the gateway will pick one from the signer's possession if not provided",
+          "description": "gas object to be used in this transaction, node will pick one from the signer's possession if not provided",
           "schema": {
             "$ref": "#/components/schemas/ObjectID"
           }
@@ -1626,7 +1626,7 @@
         },
         {
           "name": "gas",
-          "description": "gas object to be used in this transaction, the gateway will pick one from the signer's possession if not provided",
+          "description": "gas object to be used in this transaction, node will pick one from the signer's possession if not provided",
           "schema": {
             "$ref": "#/components/schemas/ObjectID"
           }
@@ -1704,7 +1704,7 @@
         },
         {
           "name": "gas",
-          "description": "gas object to be used in this transaction, the gateway will pick one from the signer's possession if not provided",
+          "description": "gas object to be used in this transaction, node will pick one from the signer's possession if not provided",
           "schema": {
             "$ref": "#/components/schemas/ObjectID"
           }
@@ -1884,7 +1884,7 @@
         },
         {
           "name": "gas",
-          "description": "gas object to be used in this transaction, the gateway will pick one from the signer's possession if not provided",
+          "description": "gas object to be used in this transaction, node will pick one from the signer's possession if not provided",
           "schema": {
             "$ref": "#/components/schemas/ObjectID"
           }
@@ -1948,7 +1948,7 @@
         },
         {
           "name": "gas",
-          "description": "gas object to be used in this transaction, the gateway will pick one from the signer's possession if not provided",
+          "description": "gas object to be used in this transaction, node will pick one from the signer's possession if not provided",
           "schema": {
             "$ref": "#/components/schemas/ObjectID"
           }
@@ -2009,7 +2009,7 @@
         },
         {
           "name": "gas",
-          "description": "gas object to be used in this transaction, the gateway will pick one from the signer's possession if not provided",
+          "description": "gas object to be used in this transaction, node will pick one from the signer's possession if not provided",
           "schema": {
             "$ref": "#/components/schemas/ObjectID"
           }
@@ -2092,7 +2092,7 @@
         },
         {
           "name": "gas",
-          "description": "gas object to be used in this transaction, the gateway will pick one from the signer's possession if not provided",
+          "description": "gas object to be used in this transaction, node will pick one from the signer's possession if not provided",
           "schema": {
             "$ref": "#/components/schemas/ObjectID"
           }

@@ -1016,7 +1016,6 @@ impl WalletContext {
         ))
     }
 
-    /// This function is compatible with both fullnode and an embedded gateway
     pub async fn execute_transaction(
         &self,
         tx: VerifiedTransaction,
