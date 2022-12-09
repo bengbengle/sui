@@ -14,12 +14,13 @@ use std::{
     time::Duration,
 };
 use storage::CertificateStore;
+use tap::Tap;
 use tokio::{
     sync::{oneshot, watch},
     task::{JoinError, JoinHandle},
     time::{self, timeout, Instant},
 };
-use tracing::{debug, error, instrument, trace, warn};
+use tracing::{debug, error, info, instrument, trace, warn};
 use types::{
     error::{DagError, DagResult},
     metered_channel::{Receiver, Sender},
@@ -128,6 +129,9 @@ impl CertificateFetcher {
             }
             .run()
             .await;
+        })
+        .tap(|_| {
+            info!("CertificateFetcher task shutdown");
         })
     }
 

@@ -6,7 +6,7 @@ use crypto::PublicKey;
 use mysten_metrics::spawn_monitored_task;
 use network::UnreliableNetwork;
 use std::{collections::BTreeMap, sync::Arc};
-use tap::TapOptional;
+use tap::{Tap, TapOptional};
 use tokio::{sync::watch, task::JoinHandle};
 use tracing::{debug, info, warn};
 use types::{
@@ -59,6 +59,9 @@ impl StateHandler {
             }
             .run()
             .await;
+        })
+        .tap(|_| {
+            info!("StateHandler task shutdown");
         })
     }
 

@@ -21,6 +21,7 @@ use std::time::Duration;
 use std::{collections::HashMap, sync::Arc, time::Instant};
 use storage::CertificateStore;
 use store::Store;
+use tap::Tap;
 use tokio::{
     sync::{oneshot, watch},
     task::{JoinHandle, JoinSet},
@@ -154,6 +155,9 @@ impl Core {
             .await
             .run()
             .await;
+        })
+        .tap(|_| {
+            info!("Core task shutdown");
         })
     }
 

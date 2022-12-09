@@ -10,7 +10,7 @@ use futures::stream::FuturesOrdered;
 use store::Store;
 
 use config::WorkerId;
-use tracing::error;
+use tracing::{error, info};
 
 #[cfg(feature = "benchmark")]
 use std::convert::TryInto;
@@ -19,6 +19,7 @@ use futures::{Future, StreamExt};
 
 use mysten_metrics::spawn_monitored_task;
 use std::sync::Arc;
+use tap::Tap;
 use tokio::{
     sync::watch,
     task::JoinHandle,
@@ -95,6 +96,9 @@ impl BatchMaker {
             }
             .run()
             .await;
+        })
+        .tap(|_| {
+            info!("BatchMaker task shutdown");
         })
     }
 

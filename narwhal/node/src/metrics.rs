@@ -8,7 +8,9 @@ use mysten_metrics::spawn_monitored_task;
 use mysten_network::multiaddr::to_socket_addr;
 use prometheus::{Registry, TextEncoder};
 use std::collections::HashMap;
+use tap::Tap;
 use tokio::task::JoinHandle;
+use tracing::info;
 
 const METRICS_ROUTE: &str = "/metrics";
 const PRIMARY_METRICS_PREFIX: &str = "narwhal_primary";
@@ -42,6 +44,9 @@ pub fn start_prometheus_server(addr: Multiaddr, registry: &Registry) -> JoinHand
             .serve(app.into_make_service())
             .await
             .unwrap();
+    })
+    .tap(|_| {
+        info!("Metrics server task shutdown");
     })
 }
 

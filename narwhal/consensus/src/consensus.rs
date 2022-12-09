@@ -15,6 +15,7 @@ use std::{
     sync::Arc,
 };
 use storage::CertificateStore;
+use tap::tap::Tap;
 use tokio::{sync::watch, task::JoinHandle};
 use tracing::{debug, info, instrument};
 use types::{
@@ -286,7 +287,9 @@ where
             state,
         };
 
-        spawn_monitored_task!(s.run())
+        spawn_monitored_task!(s.run()).tap(|_| {
+            info!("Consensus task shutdown");
+        })
     }
 
     fn change_epoch(&mut self, new_committee: Committee) -> StoreResult<ConsensusState> {

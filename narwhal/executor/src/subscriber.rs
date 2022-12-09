@@ -20,6 +20,7 @@ use fastcrypto::hash::Hash;
 use mysten_metrics::spawn_monitored_task;
 use rand::prelude::SliceRandom;
 use rand::rngs::ThreadRng;
+use tap::Tap;
 use tokio::time::Instant;
 use tokio::{
     sync::{oneshot, watch},
@@ -74,7 +75,9 @@ pub fn spawn_subscriber<State: ExecutionState + Send + Sync + 'static>(
     let rx_reconfigure_subscriber = tx_reconfigure.subscribe();
 
     vec![
-        spawn_monitored_task!(run_notify(state, rx_notifier, rx_reconfigure_notify)),
+        spawn_monitored_task!(run_notify(state, rx_notifier, rx_reconfigure_notify)).tap(|_| {
+            info!("Subscriber notify task shutdown");
+        }),
         spawn_monitored_task!(create_and_run_subscriber(
             name,
             network,
@@ -85,7 +88,10 @@ pub fn spawn_subscriber<State: ExecutionState + Send + Sync + 'static>(
             metrics,
             restored_consensus_output,
             tx_notifier,
-        )),
+        ))
+        .tap(|_| {
+            info!("Subscriber task shutdown");
+        }),
     ]
 }
 

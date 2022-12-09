@@ -12,6 +12,7 @@ use std::{
     ops::RangeInclusive,
     sync::{Arc, RwLock},
 };
+use tap::Tap;
 use thiserror::Error;
 use tokio::{
     sync::{
@@ -20,7 +21,7 @@ use tokio::{
     },
     task::JoinHandle,
 };
-use tracing::instrument;
+use tracing::{info, instrument};
 use types::{metered_channel, Certificate, CertificateDigest, Round};
 
 use crate::{metrics::ConsensusMetrics, DEFAULT_CHANNEL_SIZE};
@@ -352,7 +353,9 @@ impl Dag {
             metrics,
         );
 
-        let handle = spawn_monitored_task!(async move { idg.run().await });
+        let handle = spawn_monitored_task!(async move { idg.run().await }).tap(|_| {
+            info!("DAG task shutdown");
+        });
         let dag = Dag { tx_commands };
         (handle, dag)
     }

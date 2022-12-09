@@ -6,7 +6,9 @@ use crypto::NetworkPublicKey;
 use futures::{stream::FuturesUnordered, StreamExt};
 use mysten_metrics::{monitored_future, spawn_monitored_task};
 use network::{CancelOnDropHandler, ReliableNetwork};
+use tap::Tap;
 use tokio::{sync::watch, task::JoinHandle};
+use tracing::info;
 use types::{
     metered_channel::Receiver, PrimaryResponse, ReconfigureNotification, WorkerOthersBatchMessage,
     WorkerOurBatchMessage,
@@ -47,6 +49,9 @@ impl PrimaryConnector {
             }
             .run()
             .await;
+        })
+        .tap(|_| {
+            info!("PrimaryConnector task shutdown");
         })
     }
 

@@ -10,8 +10,9 @@ use futures::stream::{futures_unordered::FuturesUnordered, FuturesOrdered, Strea
 use mysten_metrics::{monitored_future, spawn_monitored_task};
 use network::{CancelOnDropHandler, ReliableNetwork};
 use std::time::Duration;
+use tap::Tap;
 use tokio::{sync::watch, task::JoinHandle, time::timeout};
-use tracing::{error, trace};
+use tracing::{error, info, trace};
 use types::{metered_channel::Receiver, Batch, ReconfigureNotification, WorkerBatchMessage};
 
 #[cfg(test)]
@@ -60,6 +61,9 @@ impl QuorumWaiter {
             }
             .run()
             .await;
+        })
+        .tap(|_| {
+            info!("QuorumWaiter task shutdown");
         })
     }
 

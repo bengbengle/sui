@@ -14,6 +14,7 @@ use crypto::PublicKey;
 use multiaddr::Multiaddr;
 use mysten_metrics::spawn_monitored_task;
 use std::{sync::Arc, time::Duration};
+use tap::Tap;
 use tokio::task::JoinHandle;
 use tracing::{error, info};
 use types::{ConfigurationServer, ProposerServer, ValidatorServer};
@@ -67,6 +68,9 @@ impl<SynchronizerHandler: Handler + Send + Sync + 'static> ConsensusAPIGrpc<Sync
             .run()
             .await
             .map_err(|e| error!("{:?}", e));
+        })
+        .tap(|_| {
+            info!("ConsensusAPIGrpc task shutdown");
         })
     }
 

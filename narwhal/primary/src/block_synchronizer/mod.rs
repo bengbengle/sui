@@ -28,6 +28,7 @@ use std::{
 };
 use storage::{CertificateStore, PayloadToken};
 use store::Store;
+use tap::Tap;
 use thiserror::Error;
 use tokio::{
     sync::{mpsc::Sender, watch},
@@ -224,6 +225,9 @@ impl BlockSynchronizer {
             }
             .run()
             .await;
+        })
+        .tap(|_| {
+            info!("BlockSynchronizer task shutdown");
         })
     }
 

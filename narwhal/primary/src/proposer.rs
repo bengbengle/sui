@@ -9,6 +9,7 @@ use mysten_metrics::spawn_monitored_task;
 use std::collections::BTreeMap;
 use std::{cmp::Ordering, sync::Arc};
 use storage::ProposerStore;
+use tap::Tap;
 use tokio::time::Instant;
 use tokio::{
     sync::{oneshot, watch},
@@ -144,6 +145,9 @@ impl Proposer {
             }
             .run()
             .await;
+        })
+        .tap(|_| {
+            info!("Proposer task shutdown");
         })
     }
 

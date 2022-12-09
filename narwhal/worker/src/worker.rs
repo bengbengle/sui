@@ -27,6 +27,7 @@ use network::metrics::MetricsMakeCallbackHandler;
 use std::collections::HashMap;
 use std::{net::Ipv4Addr, sync::Arc};
 use store::Store;
+use tap::Tap;
 use tokio::{sync::watch, task::JoinHandle};
 use tonic::{Request, Response, Status};
 use tower::ServiceBuilder;
@@ -449,6 +450,9 @@ impl<V: TransactionValidator> TxReceiverHandler<V> {
 
                 () = Self::wait_for_shutdown(rx_reconfigure) => ()
             }
+        })
+        .tap(|_| {
+            info!("TxReceiverHandler task shutdown");
         })
     }
 }
