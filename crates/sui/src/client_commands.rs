@@ -523,6 +523,7 @@ impl SuiClientCommands {
                         .config
                         .keystore
                         .sign_secure(&from, &data, Intent::default())?;
+                info!("qqsig=={:?}", signature);
                 let response = context
                     .execute_transaction(
                         Transaction::from_data(data, Intent::default(), signature).verify()?,
@@ -702,7 +703,7 @@ impl SuiClientCommands {
                 let (address, phrase, scheme) = context
                     .config
                     .keystore
-                    .generate_new_key(key_scheme, derivation_path)?;
+                    .generate_and_add_new_key(key_scheme, derivation_path)?;
                 SuiClientCommandResult::NewAddress((address, phrase, scheme))
             }
             SuiClientCommands::Gas { address } => {
@@ -1280,11 +1281,14 @@ pub async fn call_move(
             gas_budget,
         )
         .await?;
+    info!("==ffsender: {:?}", sender);
+    info!("==ffdata: {:?}", data);
 
     let signature = context
         .config
         .keystore
         .sign_secure(&sender, &data, Intent::default())?;
+    info!("==ffsignature: {:?}", signature);
     let transaction = Transaction::from_data(data, Intent::default(), signature).verify()?;
 
     let response = context.execute_transaction(transaction).await?;

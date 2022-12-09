@@ -40,7 +40,7 @@ use std::{
     hash::{Hash, Hasher},
 };
 use strum::IntoStaticStr;
-use tracing::debug;
+use tracing::{debug, info};
 
 #[cfg(test)]
 #[path = "unit_tests/messages_tests.rs"]
@@ -825,6 +825,10 @@ impl Message for SenderSignedData {
         if self.intent_message.value.kind.is_system_tx() {
             return Ok(());
         }
+        info!("=====ffsigna: {:?}", &self.tx_signature);
+        info!("=====ffauthor: {:?}", &self.intent_message.value.sender);
+        info!("=====ffintent: {:?}", &self.intent_message);
+
         self.tx_signature
             .verify_secure(&self.intent_message, self.intent_message.value.sender)
     }

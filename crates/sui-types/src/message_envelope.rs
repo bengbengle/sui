@@ -11,6 +11,7 @@ use crate::crypto::{
 use crate::error::SuiResult;
 use once_cell::sync::OnceCell;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use tracing::info;
 use std::fmt::{Debug, Display, Formatter};
 use std::ops::Deref;
 
@@ -86,6 +87,7 @@ impl<T: Message> Envelope<T, EmptySignInfo> {
     }
 
     pub fn verify_signature(&self) -> SuiResult {
+        info!("==ffcheckverifysigg");
         self.data.verify()
     }
 
