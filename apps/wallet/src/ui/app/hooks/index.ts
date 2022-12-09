@@ -19,7 +19,7 @@ export { useFormatCoin, useCoinDecimals } from './useFormatCoin';
 export { useGetNFTMeta } from './useGetNFTMeta';
 export {
     useGetRequestTxnMeta,
-    useExecuteDryRunTransactionRequest,
-} from './useExecuteDryRunTransactionRequest';
+    useTransactionDryRun,
+} from './useTransactionDryRun';
 export { useRpc } from './useRpc';
 export * from './useSigner';
