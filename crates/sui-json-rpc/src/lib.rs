@@ -19,9 +19,12 @@ use sui_open_rpc::{Module, Project};
 
 pub mod api;
 pub mod bcs_api;
+pub mod coin_api;
+pub mod error;
 pub mod event_api;
 mod metrics;
 pub mod read_api;
+
 pub mod streaming_api;
 pub mod transaction_builder_api;
 pub mod transaction_execution_api;
