@@ -7,6 +7,11 @@
 use move_core_types::identifier::Identifier;
 use serde::{de::DeserializeOwned, Serialize};
 use tracing::debug;
+use typed_store::rocks::DBMap;
+use typed_store::rocks::DBOptions;
+use typed_store::traits::Map;
+use typed_store::traits::TypedStoreDebug;
+use typed_store_derive::DBMapUtils;
 
 use sui_types::base_types::{ObjectID, SuiAddress, TransactionDigest};
 use sui_types::base_types::{ObjectInfo, ObjectRef};
@@ -14,11 +19,6 @@ use sui_types::batch::TxSequenceNumber;
 use sui_types::dynamic_field::DynamicFieldInfo;
 use sui_types::error::SuiResult;
 use sui_types::object::Owner;
-use typed_store::rocks::DBMap;
-use typed_store::rocks::DBOptions;
-use typed_store::traits::Map;
-use typed_store::traits::TypedStoreDebug;
-use typed_store_derive::DBMapUtils;
 
 use crate::default_db_options;
 

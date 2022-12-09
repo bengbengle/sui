@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-use std::collections::BTreeMap;
-
-use fastcrypto::encoding::Base64;
 use jsonrpsee::core::RpcResult;
 use jsonrpsee_proc_macros::rpc;
+use std::collections::BTreeMap;
+use sui_types::sui_system_state::SuiSystemState;
 
+use fastcrypto::encoding::Base64;
 use sui_json::SuiJsonValue;
 use sui_json_rpc_types::{
     Balance, CoinPage, EventPage, GetObjectDataResponse, GetPastObjectDataResponse,
@@ -29,7 +29,6 @@ use sui_types::event::EventID;
 use sui_types::messages::CommitteeInfoResponse;
 use sui_types::messages::ExecuteTransactionRequestType;
 use sui_types::query::{EventQuery, TransactionQuery};
-use sui_types::sui_system_state::SuiSystemState;
 
 /// Maximum number of events returned in an event query.
 /// This is equivalent to EVENT_QUERY_MAX_LIMIT in `sui-storage` crate.

@@ -1,20 +1,20 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-use std::collections::BTreeSet;
-use std::iter;
-use std::path::Path;
-use std::sync::Arc;
-use std::{fmt::Debug, path::PathBuf};
-
+use super::{authority_store_tables::AuthorityPerpetualTables, *};
+use crate::authority::authority_per_epoch_store::{
+    AuthorityPerEpochStore, ExecutionIndicesWithHash,
+};
 use arc_swap::ArcSwap;
 use once_cell::sync::OnceCell;
 use rocksdb::Options;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
-use tokio_retry::strategy::{jitter, ExponentialBackoff};
-use tracing::{debug, info, trace};
-
+use std::collections::BTreeSet;
+use std::iter;
+use std::path::Path;
+use std::sync::Arc;
+use std::{fmt::Debug, path::PathBuf};
 use sui_storage::{
     lock_service::ObjectLockStatus,
     mutex_table::{LockGuard, MutexTable},
@@ -26,14 +26,10 @@ use sui_types::object::Owner;
 use sui_types::storage::ChildObjectResolver;
 use sui_types::{base_types::SequenceNumber, storage::ParentSync};
 use sui_types::{batch::TxSequenceNumber, object::PACKAGE_VERSION};
+use tokio_retry::strategy::{jitter, ExponentialBackoff};
+use tracing::{debug, info, trace};
 use typed_store::rocks::DBBatch;
 use typed_store::traits::Map;
-
-use crate::authority::authority_per_epoch_store::{
-    AuthorityPerEpochStore, ExecutionIndicesWithHash,
-};
-
-use super::{authority_store_tables::AuthorityPerpetualTables, *};
 
 pub type AuthorityStore = SuiDataStore<AuthoritySignInfo>;
 
