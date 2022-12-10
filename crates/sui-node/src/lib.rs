@@ -208,6 +208,7 @@ impl SuiNode {
                 arc_net,
                 state.clone(),
                 active_authority.clone().node_sync_handle(),
+                config.db_path(),
                 &prometheus_registry,
             )))
         } else {
