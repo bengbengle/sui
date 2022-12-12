@@ -20,8 +20,6 @@ use sui_storage::{
     mutex_table::{LockGuard, MutexTable},
     LockService,
 };
-use sui_types::crypto::AuthoritySignInfo;
-use sui_types::message_envelope::VerifiedEnvelope;
 use sui_types::object::Owner;
 use sui_types::storage::ChildObjectResolver;
 use sui_types::{base_types::SequenceNumber, storage::ParentSync};
@@ -30,8 +28,6 @@ use tokio_retry::strategy::{jitter, ExponentialBackoff};
 use tracing::{debug, info, trace};
 use typed_store::rocks::DBBatch;
 use typed_store::traits::Map;
-
-pub type AuthorityStore = SuiDataStore<AuthoritySignInfo>;
 
 const NUM_SHARDS: usize = 4096;
 const SHARD_SIZE: usize = 128;

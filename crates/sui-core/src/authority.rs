@@ -12,7 +12,6 @@ use move_core_types::identifier::Identifier;
 use move_core_types::parser::parse_struct_tag;
 use move_core_types::{language_storage::ModuleId, resolver::ModuleResolver};
 use move_vm_runtime::{move_vm::MoveVM, native_functions::NativeFunctionTable};
-use mysten_metrics::monitored_scope;
 use mysten_metrics::{monitored_scope, spawn_monitored_task};
 use prometheus::{
     exponential_buckets, register_histogram_with_registry, register_int_counter_with_registry,
@@ -2037,6 +2036,17 @@ impl AuthorityState {
     pub fn get_owner_objects(&self, owner: SuiAddress) -> SuiResult<Vec<ObjectInfo>> {
         if let Some(indexes) = &self.indexes {
             indexes.get_owner_objects(owner)
+        } else {
+            Err(SuiError::IndexStoreNotAvailable)
+        }
+    }
+
+    pub fn get_owner_objects_iterator(
+        &self,
+        owner: SuiAddress,
+    ) -> SuiResult<impl Iterator<Item = ObjectInfo> + '_> {
+        if let Some(indexes) = &self.indexes {
+            indexes.get_owner_objects_iterator(owner)
         } else {
             Err(SuiError::IndexStoreNotAvailable)
         }

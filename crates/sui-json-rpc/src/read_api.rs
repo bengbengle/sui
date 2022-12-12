@@ -6,7 +6,6 @@ use async_trait::async_trait;
 use jsonrpsee::core::RpcResult;
 use move_binary_format::normalized::{Module as NormalizedModule, Type};
 use move_core_types::identifier::Identifier;
-use move_core_types::language_storage::StructTag;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use sui_types::intent::{Intent, IntentMessage};
@@ -18,7 +17,7 @@ use jsonrpsee::RpcModule;
 use sui_core::authority::AuthorityState;
 use sui_json_rpc_types::{
     DynamicFieldPage, GetObjectDataResponse, GetPastObjectDataResponse, MoveFunctionArgType,
-    ObjectValueKind, Page,  SuiMoveNormalizedFunction, SuiMoveNormalizedModule,
+    ObjectValueKind, Page, SuiMoveNormalizedFunction, SuiMoveNormalizedModule,
     SuiMoveNormalizedStruct, SuiObjectInfo, SuiTransactionAuthSignersResponse,
     SuiTransactionEffects, SuiTransactionResponse, TransactionsPage,
 };

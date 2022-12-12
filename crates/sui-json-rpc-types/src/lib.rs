@@ -27,8 +27,6 @@ use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Value;
 use serde_with::serde_as;
-use sui_types::coin::CoinMetadata;
-use tracing::warn;
 
 use fastcrypto::encoding::{Base64, Encoding};
 use sui_json::SuiJsonValue;
