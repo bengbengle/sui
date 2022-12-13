@@ -45,7 +45,7 @@
         },
         {
           "name": "gas",
-          "description": "gas object to be used in this transaction, the gateway will pick one from the signer's possession if not provided",
+          "description": "gas object to be used in this transaction, node will pick one from the signer's possession if not provided",
           "schema": {
             "$ref": "#/components/schemas/ObjectID"
           }
@@ -520,10 +520,46 @@
       ]
     },
     {
+      "name": "sui_getBalance",
+      "tags": [
+        {
+          "name": "Coin Query API"
+        }
+      ],
+      "description": "Return the total coin balance for each coin type.",
+      "params": [
+        {
+          "name": "owner",
+          "description": "the owner's Sui address",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/SuiAddress"
+          }
+        },
+        {
+          "name": "coin_type",
+          "description": "fully qualified type names for the coin (e.g., 0x168da5bf1f48dafc111b0a488fa454aca95e0b5e::usdc::USDC)",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "result": {
+        "name": "Vec<Balance>",
+        "required": true,
+        "schema": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/Balance"
+          }
+        }
+      }
+    },
+    {
       "name": "sui_getCoinMetadata",
       "tags": [
         {
-          "name": "Full Node API"
+          "name": "Coin Query API"
         }
       ],
       "description": "Return metadata(e.g., symbol, decimals) for a coin",
@@ -542,6 +578,55 @@
         "required": true,
         "schema": {
           "$ref": "#/components/schemas/SuiCoinMetadata"
+        }
+      }
+    },
+    {
+      "name": "sui_getCoins",
+      "tags": [
+        {
+          "name": "Coin Query API"
+        }
+      ],
+      "description": "Return the list of Coin objects owned by an address.",
+      "params": [
+        {
+          "name": "owner",
+          "description": "the owner's Sui address",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/SuiAddress"
+          }
+        },
+        {
+          "name": "coin_type",
+          "description": "fully qualified type names for the coin (e.g., 0x168da5bf1f48dafc111b0a488fa454aca95e0b5e::usdc::USDC)",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "cursor",
+          "description": "optional paging cursor",
+          "schema": {
+            "$ref": "#/components/schemas/ObjectID"
+          }
+        },
+        {
+          "name": "limit",
+          "description": "maximum number of items per page",
+          "schema": {
+            "type": "integer",
+            "format": "uint",
+            "minimum": 0.0
+          }
+        }
+      ],
+      "result": {
+        "name": "CoinPage",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/Page_for_Coin_and_ObjectID"
         }
       }
     },
@@ -1177,6 +1262,32 @@
       }
     },
     {
+      "name": "sui_getTotalSupply",
+      "tags": [
+        {
+          "name": "Coin Query API"
+        }
+      ],
+      "description": "Return total supply for a coin",
+      "params": [
+        {
+          "name": "coin_type",
+          "description": "fully qualified type names for the coin (e.g., 0x168da5bf1f48dafc111b0a488fa454aca95e0b5e::usdc::USDC)",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "result": {
+        "name": "Supply",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/Supply"
+        }
+      }
+    },
+    {
       "name": "sui_getTotalTransactionNumber",
       "tags": [
         {
@@ -1554,7 +1665,7 @@
         },
         {
           "name": "gas",
-          "description": "gas object to be used in this transaction, the gateway will pick one from the signer's possession if not provided",
+          "description": "gas object to be used in this transaction, node will pick one from the signer's possession if not provided",
           "schema": {
             "$ref": "#/components/schemas/ObjectID"
           }
@@ -1643,7 +1754,7 @@
         },
         {
           "name": "gas",
-          "description": "gas object to be used in this transaction, the gateway will pick one from the signer's possession if not provided",
+          "description": "gas object to be used in this transaction, node will pick one from the signer's possession if not provided",
           "schema": {
             "$ref": "#/components/schemas/ObjectID"
           }
@@ -1721,7 +1832,7 @@
         },
         {
           "name": "gas",
-          "description": "gas object to be used in this transaction, the gateway will pick one from the signer's possession if not provided",
+          "description": "gas object to be used in this transaction, node will pick one from the signer's possession if not provided",
           "schema": {
             "$ref": "#/components/schemas/ObjectID"
           }
@@ -1901,7 +2012,7 @@
         },
         {
           "name": "gas",
-          "description": "gas object to be used in this transaction, the gateway will pick one from the signer's possession if not provided",
+          "description": "gas object to be used in this transaction, node will pick one from the signer's possession if not provided",
           "schema": {
             "$ref": "#/components/schemas/ObjectID"
           }
@@ -1965,7 +2076,7 @@
         },
         {
           "name": "gas",
-          "description": "gas object to be used in this transaction, the gateway will pick one from the signer's possession if not provided",
+          "description": "gas object to be used in this transaction, node will pick one from the signer's possession if not provided",
           "schema": {
             "$ref": "#/components/schemas/ObjectID"
           }
@@ -2026,7 +2137,7 @@
         },
         {
           "name": "gas",
-          "description": "gas object to be used in this transaction, the gateway will pick one from the signer's possession if not provided",
+          "description": "gas object to be used in this transaction, node will pick one from the signer's possession if not provided",
           "schema": {
             "$ref": "#/components/schemas/ObjectID"
           }
@@ -2109,7 +2220,7 @@
         },
         {
           "name": "gas",
-          "description": "gas object to be used in this transaction, the gateway will pick one from the signer's possession if not provided",
+          "description": "gas object to be used in this transaction, node will pick one from the signer's possession if not provided",
           "schema": {
             "$ref": "#/components/schemas/ObjectID"
           }
@@ -2396,6 +2507,35 @@
           },
           "transactionEffectsDigest": {
             "$ref": "#/components/schemas/TransactionEffectsDigest"
+          }
+        }
+      },
+      "Coin": {
+        "type": "object",
+        "required": [
+          "balance",
+          "coinObjectId",
+          "coinType",
+          "digest",
+          "version"
+        ],
+        "properties": {
+          "balance": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          },
+          "coinObjectId": {
+            "$ref": "#/components/schemas/ObjectID"
+          },
+          "coinType": {
+            "type": "string"
+          },
+          "digest": {
+            "$ref": "#/components/schemas/ObjectDigest"
+          },
+          "version": {
+            "$ref": "#/components/schemas/SequenceNumber"
           }
         }
       },
@@ -3863,6 +4003,30 @@
             ]
           }
         ]
+      },
+      "Page_for_Coin_and_ObjectID": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Coin"
+            }
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ObjectID"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
       },
       "Page_for_EventEnvelope_and_EventID": {
         "type": "object",

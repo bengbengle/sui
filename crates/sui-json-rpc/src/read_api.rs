@@ -9,7 +9,6 @@ use move_core_types::identifier::Identifier;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use sui_types::sui_system_state::SuiSystemState;
-use sui_types::sui_system_state::SuiSystemState;
 use tap::TapFallible;
 
 use fastcrypto::encoding::Base64;
