@@ -66,6 +66,12 @@ pub type TransactionsPage = Page<TransactionDigest, TransactionDigest>;
 
 pub type EventPage = Page<SuiEventEnvelope, EventID>;
 
+impl Coin {
+    pub fn object_ref(&self) -> ObjectRef {
+        (self.coin_object_id, self.version, self.digest)
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, JsonSchema)]
 pub enum SuiMoveAbility {
     Copy,

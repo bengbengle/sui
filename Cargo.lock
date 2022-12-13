@@ -8906,8 +8906,8 @@ dependencies = [
  "rand 0.8.5",
  "serde 1.0.147",
  "serde_json",
+ "sui",
  "sui-config",
- "sui-core",
  "sui-json",
  "sui-json-rpc",
  "sui-json-rpc-types",
@@ -8915,6 +8915,8 @@ dependencies = [
  "sui-transaction-builder",
  "sui-types",
  "tempfile",
+ "test-utils",
+ "thiserror",
  "tokio",
  "workspace-hack",
 ]

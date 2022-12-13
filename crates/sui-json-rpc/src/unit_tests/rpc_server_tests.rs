@@ -313,7 +313,7 @@ async fn test_get_fullnode_transaction() -> Result<(), anyhow::Error> {
     // test get_recent_transactions with smaller range
     let tx = client
         .read_api()
-        .get_transactions(TransactionQuery::All, None, Some(3), Some(true))
+        .get_transactions(TransactionQuery::All, None, Some(3), true)
         .await
         .unwrap();
     assert_eq!(3, tx.data.len());
@@ -321,7 +321,7 @@ async fn test_get_fullnode_transaction() -> Result<(), anyhow::Error> {
     // test get all transactions paged
     let first_page = client
         .read_api()
-        .get_transactions(TransactionQuery::All, None, Some(5), None)
+        .get_transactions(TransactionQuery::All, None, Some(5), false)
         .await
         .unwrap();
     assert_eq!(5, first_page.data.len());
@@ -330,7 +330,7 @@ async fn test_get_fullnode_transaction() -> Result<(), anyhow::Error> {
     // test get all transactions in ascending order
     let second_page = client
         .read_api()
-        .get_transactions(TransactionQuery::All, first_page.next_cursor, None, None)
+        .get_transactions(TransactionQuery::All, first_page.next_cursor, None, false)
         .await
         .unwrap();
     assert_eq!(15, second_page.data.len());
@@ -343,7 +343,7 @@ async fn test_get_fullnode_transaction() -> Result<(), anyhow::Error> {
     // test get 10 latest transactions paged
     let latest = client
         .read_api()
-        .get_transactions(TransactionQuery::All, None, Some(10), Some(true))
+        .get_transactions(TransactionQuery::All, None, Some(10), true)
         .await
         .unwrap();
     assert_eq!(10, latest.data.len());
@@ -358,7 +358,7 @@ async fn test_get_fullnode_transaction() -> Result<(), anyhow::Error> {
             TransactionQuery::FromAddress(cluster.accounts[0]),
             None,
             None,
-            None,
+            false,
         )
         .await
         .unwrap();
@@ -371,7 +371,7 @@ async fn test_get_fullnode_transaction() -> Result<(), anyhow::Error> {
             TransactionQuery::FromAddress(cluster.accounts[0]),
             None,
             None,
-            Some(true),
+            true,
         )
         .await
         .unwrap();
@@ -385,7 +385,7 @@ async fn test_get_fullnode_transaction() -> Result<(), anyhow::Error> {
     // test get_recent_transactions
     let tx = client
         .read_api()
-        .get_transactions(TransactionQuery::All, None, Some(20), Some(true))
+        .get_transactions(TransactionQuery::All, None, Some(20), true)
         .await
         .unwrap();
     assert_eq!(20, tx.data.len());
@@ -450,14 +450,14 @@ async fn test_get_fullnode_events() -> Result<(), anyhow::Error> {
     // test get all events ascending
     let page1 = client
         .event_api()
-        .get_events(EventQuery::All, Some((2, 0).into()), Some(3), None)
+        .get_events(EventQuery::All, Some((2, 0).into()), Some(3), false)
         .await
         .unwrap();
     assert_eq!(3, page1.data.len());
     assert_eq!(Some((5, 0).into()), page1.next_cursor);
     let page2 = client
         .event_api()
-        .get_events(EventQuery::All, Some((5, 0).into()), Some(20), None)
+        .get_events(EventQuery::All, Some((5, 0).into()), Some(20), false)
         .await
         .unwrap();
     assert_eq!(15, page2.data.len());
@@ -466,14 +466,14 @@ async fn test_get_fullnode_events() -> Result<(), anyhow::Error> {
     // test get all events descending
     let page1 = client
         .event_api()
-        .get_events(EventQuery::All, None, Some(3), Some(true))
+        .get_events(EventQuery::All, None, Some(3), true)
         .await
         .unwrap();
     assert_eq!(3, page1.data.len());
     assert_eq!(Some((16, 0).into()), page1.next_cursor);
     let page2 = client
         .event_api()
-        .get_events(EventQuery::All, Some((16, 0).into()), None, Some(true))
+        .get_events(EventQuery::All, Some((16, 0).into()), None, true)
         .await
         .unwrap();
     assert_eq!(17, page2.data.len());
@@ -486,7 +486,7 @@ async fn test_get_fullnode_events() -> Result<(), anyhow::Error> {
             EventQuery::Sender(cluster.accounts[0]),
             None,
             Some(10),
-            None,
+            false,
         )
         .await
         .unwrap();
@@ -499,7 +499,7 @@ async fn test_get_fullnode_events() -> Result<(), anyhow::Error> {
             EventQuery::Recipient(Owner::AddressOwner(cluster.accounts[1])),
             None,
             Some(10),
-            None,
+            false,
         )
         .await
         .unwrap();
@@ -517,7 +517,7 @@ async fn test_get_fullnode_events() -> Result<(), anyhow::Error> {
     // test get object events
     let page = client
         .event_api()
-        .get_events(EventQuery::Object(object), None, Some(10), None)
+        .get_events(EventQuery::Object(object), None, Some(10), false)
         .await
         .unwrap();
     assert_eq!(4, page.data.len());
