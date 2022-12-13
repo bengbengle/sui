@@ -94,7 +94,7 @@ macro_rules! monitored_future {
                 None
             };
             let _logging_guard = if $logging_enabled {
-                Some(mysten_metrics::scopeguard::guard((), |_|{
+                Some(mysten_metrics::scopeguard::guard((), |_| {
                     tracing::event!(
                         tracing::Level::$logging_level,
                         "Future {} completed",
