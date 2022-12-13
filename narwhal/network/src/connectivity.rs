@@ -3,11 +3,9 @@
 
 use crate::metrics::NetworkConnectionMetrics;
 use anemo::PeerId;
-use mysten_metrics::spawn_monitored_task;
+use mysten_metrics::spawn_logged_monitored_task;
 use std::collections::HashMap;
-use tap::Tap;
 use tokio::task::JoinHandle;
-use tracing::info;
 
 const PEER_TYPE_NONE: &str = "";
 
@@ -24,15 +22,15 @@ impl ConnectionMonitor {
         connection_metrics: NetworkConnectionMetrics,
         peer_id_types: HashMap<PeerId, String>,
     ) -> JoinHandle<()> {
-        spawn_monitored_task!(Self {
-            network,
-            connection_metrics,
-            peer_id_types
-        }
-        .run())
-        .tap(|_| {
-            info!("ConnectionMonitor task shutdown");
-        })
+        spawn_logged_monitored_task!(
+            Self {
+                network,
+                connection_metrics,
+                peer_id_types
+            }
+            .run(),
+            "ConnectionMonitor"
+        )
     }
 
     async fn run(self) {

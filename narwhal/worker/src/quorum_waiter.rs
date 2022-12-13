@@ -7,12 +7,11 @@ use config::{Committee, SharedWorkerCache, Stake, WorkerId};
 use crypto::PublicKey;
 use fastcrypto::hash::Hash;
 use futures::stream::{futures_unordered::FuturesUnordered, FuturesOrdered, StreamExt as _};
-use mysten_metrics::{monitored_future, spawn_monitored_task};
+use mysten_metrics::{monitored_future, spawn_logged_monitored_task};
 use network::{CancelOnDropHandler, ReliableNetwork};
 use std::time::Duration;
-use tap::Tap;
 use tokio::{sync::watch, task::JoinHandle, time::timeout};
-use tracing::{error, info, trace};
+use tracing::{error, trace};
 use types::{metered_channel::Receiver, Batch, ReconfigureNotification, WorkerBatchMessage};
 
 #[cfg(test)]
@@ -49,22 +48,22 @@ impl QuorumWaiter {
         rx_message: Receiver<(Batch, Option<tokio::sync::oneshot::Sender<()>>)>,
         network: anemo::Network,
     ) -> JoinHandle<()> {
-        spawn_monitored_task!(async move {
-            Self {
-                name,
-                id,
-                committee,
-                worker_cache,
-                rx_reconfigure,
-                rx_message,
-                network,
-            }
-            .run()
-            .await;
-        })
-        .tap(|_| {
-            info!("QuorumWaiter task shutdown");
-        })
+        spawn_logged_monitored_task!(
+            async move {
+                Self {
+                    name,
+                    id,
+                    committee,
+                    worker_cache,
+                    rx_reconfigure,
+                    rx_message,
+                    network,
+                }
+                .run()
+                .await;
+            },
+            "QuorumWaiterTask"
+        )
     }
 
     /// Helper function. It waits for a future to complete and then delivers a value.

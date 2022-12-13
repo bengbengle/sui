@@ -4,11 +4,9 @@
 
 use crypto::NetworkPublicKey;
 use futures::{stream::FuturesUnordered, StreamExt};
-use mysten_metrics::{monitored_future, spawn_monitored_task};
+use mysten_metrics::{monitored_future, spawn_logged_monitored_task};
 use network::{CancelOnDropHandler, ReliableNetwork};
-use tap::Tap;
 use tokio::{sync::watch, task::JoinHandle};
-use tracing::info;
 use types::{
     metered_channel::Receiver, PrimaryResponse, ReconfigureNotification, WorkerOthersBatchMessage,
     WorkerOurBatchMessage,
@@ -39,20 +37,20 @@ impl PrimaryConnector {
         rx_others_batch: Receiver<WorkerOthersBatchMessage>,
         primary_client: anemo::Network,
     ) -> JoinHandle<()> {
-        spawn_monitored_task!(async move {
-            Self {
-                primary_name,
-                rx_reconfigure,
-                rx_our_batch,
-                rx_others_batch,
-                primary_client,
-            }
-            .run()
-            .await;
-        })
-        .tap(|_| {
-            info!("PrimaryConnector task shutdown");
-        })
+        spawn_logged_monitored_task!(
+            async move {
+                Self {
+                    primary_name,
+                    rx_reconfigure,
+                    rx_our_batch,
+                    rx_others_batch,
+                    primary_client,
+                }
+                .run()
+                .await;
+            },
+            "PrimaryConnectorTask"
+        )
     }
 
     async fn run(&mut self) {

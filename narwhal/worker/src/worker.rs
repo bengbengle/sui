@@ -21,13 +21,12 @@ use config::{Parameters, SharedCommittee, SharedWorkerCache, WorkerId};
 use crypto::{traits::KeyPair as _, NetworkKeyPair, NetworkPublicKey, PublicKey};
 use futures::StreamExt;
 use multiaddr::{Multiaddr, Protocol};
-use mysten_metrics::spawn_monitored_task;
+use mysten_metrics::spawn_logged_monitored_task;
 use network::failpoints::FailpointsMakeCallbackHandler;
 use network::metrics::MetricsMakeCallbackHandler;
 use std::collections::HashMap;
 use std::{net::Ipv4Addr, sync::Arc};
 use store::Store;
-use tap::Tap;
 use tokio::{sync::watch, task::JoinHandle};
 use tonic::{Request, Response, Status};
 use tower::ServiceBuilder;
@@ -438,22 +437,22 @@ impl<V: TransactionValidator> TxReceiverHandler<V> {
         rx_reconfigure: watch::Receiver<ReconfigureNotification>,
         endpoint_metrics: WorkerEndpointMetrics,
     ) -> JoinHandle<()> {
-        spawn_monitored_task!(async move {
-            tokio::select! {
-                _result =  mysten_network::config::Config::new()
-                    .server_builder_with_metrics(endpoint_metrics)
-                    .add_service(TransactionsServer::new(self))
-                    .bind(&address)
-                    .await
-                    .unwrap()
-                    .serve() => (),
+        spawn_logged_monitored_task!(
+            async move {
+                tokio::select! {
+                    _result =  mysten_network::config::Config::new()
+                        .server_builder_with_metrics(endpoint_metrics)
+                        .add_service(TransactionsServer::new(self))
+                        .bind(&address)
+                        .await
+                        .unwrap()
+                        .serve() => (),
 
-                () = Self::wait_for_shutdown(rx_reconfigure) => ()
-            }
-        })
-        .tap(|_| {
-            info!("TxReceiverHandler task shutdown");
-        })
+                    () = Self::wait_for_shutdown(rx_reconfigure) => ()
+                }
+            },
+            "TxReceiverHandlerTask"
+        )
     }
 }
 

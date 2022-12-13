@@ -3,9 +3,8 @@
 
 use axum::routing::post;
 use axum::{extract::Extension, http::StatusCode, routing::get, Json, Router};
-use mysten_metrics::spawn_monitored_task;
+use mysten_metrics::{spawn_logged_monitored_task, spawn_monitored_task};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
-use tap::Tap;
 use tokio::sync::watch;
 use tokio::task::JoinHandle;
 use tracing::info;
@@ -53,18 +52,16 @@ pub fn start_admin_server(
         }
     }));
 
-    handles.push(
-        spawn_monitored_task!(async move {
+    handles.push(spawn_logged_monitored_task!(
+        async move {
             axum_server::bind(socket_address)
                 .handle(shutdown_handle)
                 .serve(router.into_make_service())
                 .await
                 .unwrap();
-        })
-        .tap(|_| {
-            info!("Admin server shutdown");
-        }),
-    );
+        },
+        "AdminServerTask"
+    ));
 
     handles
 }

@@ -12,9 +12,8 @@ use consensus::dag::Dag;
 
 use crypto::PublicKey;
 use multiaddr::Multiaddr;
-use mysten_metrics::spawn_monitored_task;
+use mysten_metrics::spawn_logged_monitored_task;
 use std::{sync::Arc, time::Duration};
-use tap::Tap;
 use tokio::task::JoinHandle;
 use tracing::{error, info};
 use types::{ConfigurationServer, ProposerServer, ValidatorServer};
@@ -52,26 +51,26 @@ impl<SynchronizerHandler: Handler + Send + Sync + 'static> ConsensusAPIGrpc<Sync
         committee: SharedCommittee,
         endpoints_metrics: EndpointMetrics,
     ) -> JoinHandle<()> {
-        spawn_monitored_task!(async move {
-            let _ = Self {
-                name,
-                socket_address,
-                block_waiter,
-                block_remover,
-                get_collections_timeout,
-                remove_collections_timeout,
-                block_synchronizer_handler,
-                dag,
-                committee,
-                endpoints_metrics,
-            }
-            .run()
-            .await
-            .map_err(|e| error!("{:?}", e));
-        })
-        .tap(|_| {
-            info!("ConsensusAPIGrpc task shutdown");
-        })
+        spawn_logged_monitored_task!(
+            async move {
+                let _ = Self {
+                    name,
+                    socket_address,
+                    block_waiter,
+                    block_remover,
+                    get_collections_timeout,
+                    remove_collections_timeout,
+                    block_synchronizer_handler,
+                    dag,
+                    committee,
+                    endpoints_metrics,
+                }
+                .run()
+                .await
+                .map_err(|e| error!("{:?}", e));
+            },
+            "ConsensusAPIGrpcTask"
+        )
     }
 
     async fn run(self) -> Result<(), Box<dyn std::error::Error>> {

@@ -3,10 +3,10 @@
 // SPDX-License-Identifier: Apache-2.0
 use config::{Committee, SharedCommittee, SharedWorkerCache, WorkerCache, WorkerIndex};
 use crypto::PublicKey;
-use mysten_metrics::spawn_monitored_task;
+use mysten_metrics::spawn_logged_monitored_task;
 use network::UnreliableNetwork;
 use std::{collections::BTreeMap, sync::Arc};
-use tap::{Tap, TapOptional};
+use tap::TapOptional;
 use tokio::{sync::watch, task::JoinHandle};
 use tracing::{debug, info, warn};
 use types::{
@@ -46,23 +46,23 @@ impl StateHandler {
         tx_commited_own_headers: Option<Sender<(Round, Vec<Round>)>>,
         network: anemo::Network,
     ) -> JoinHandle<()> {
-        spawn_monitored_task!(async move {
-            Self {
-                name,
-                committee,
-                worker_cache,
-                rx_committed_certificates,
-                rx_state_handler,
-                tx_reconfigure,
-                tx_commited_own_headers,
-                network,
-            }
-            .run()
-            .await;
-        })
-        .tap(|_| {
-            info!("StateHandler task shutdown");
-        })
+        spawn_logged_monitored_task!(
+            async move {
+                Self {
+                    name,
+                    committee,
+                    worker_cache,
+                    rx_committed_certificates,
+                    rx_state_handler,
+                    tx_reconfigure,
+                    tx_commited_own_headers,
+                    network,
+                }
+                .run()
+                .await;
+            },
+            "StateHandlerTask"
+        )
     }
 
     async fn handle_sequenced(&mut self, commit_round: Round, certificates: Vec<Certificate>) {

@@ -8,14 +8,13 @@ use crate::{metrics::ConsensusMetrics, SequenceNumber};
 use config::Committee;
 use crypto::PublicKey;
 use fastcrypto::hash::Hash;
-use mysten_metrics::spawn_monitored_task;
+use mysten_metrics::spawn_logged_monitored_task;
 use std::{
     cmp::{max, Ordering},
     collections::HashMap,
     sync::Arc,
 };
 use storage::CertificateStore;
-use tap::tap::Tap;
 use tokio::{sync::watch, task::JoinHandle};
 use tracing::{debug, info, instrument};
 use types::{
@@ -287,9 +286,7 @@ where
             state,
         };
 
-        spawn_monitored_task!(s.run()).tap(|_| {
-            info!("Consensus task shutdown");
-        })
+        spawn_logged_monitored_task!(s.run(), "Consensus", INFO)
     }
 
     fn change_epoch(&mut self, new_committee: Committee) -> StoreResult<ConsensusState> {

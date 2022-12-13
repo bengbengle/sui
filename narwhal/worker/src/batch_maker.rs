@@ -10,16 +10,15 @@ use futures::stream::FuturesOrdered;
 use store::Store;
 
 use config::WorkerId;
-use tracing::{error, info};
+use tracing::error;
 
 #[cfg(feature = "benchmark")]
 use std::convert::TryInto;
 
 use futures::{Future, StreamExt};
 
-use mysten_metrics::spawn_monitored_task;
+use mysten_metrics::spawn_logged_monitored_task;
 use std::sync::Arc;
-use tap::Tap;
 use tokio::{
     sync::watch,
     task::JoinHandle,
@@ -80,26 +79,26 @@ impl BatchMaker {
         store: Store<BatchDigest, Batch>,
         tx_digest: Sender<(WorkerOurBatchMessage, PrimaryResponse)>,
     ) -> JoinHandle<()> {
-        spawn_monitored_task!(async move {
-            Self {
-                id,
-                committee,
-                batch_size,
-                max_batch_delay,
-                rx_reconfigure,
-                rx_batch_maker,
-                tx_message,
-                batch_start_timestamp: Instant::now(),
-                node_metrics,
-                store,
-                tx_digest,
-            }
-            .run()
-            .await;
-        })
-        .tap(|_| {
-            info!("BatchMaker task shutdown");
-        })
+        spawn_logged_monitored_task!(
+            async move {
+                Self {
+                    id,
+                    committee,
+                    batch_size,
+                    max_batch_delay,
+                    rx_reconfigure,
+                    rx_batch_maker,
+                    tx_message,
+                    batch_start_timestamp: Instant::now(),
+                    node_metrics,
+                    store,
+                    tx_digest,
+                }
+                .run()
+                .await;
+            },
+            "BatchMakerTask"
+        )
     }
 
     /// Main loop receiving incoming transactions and creating batches.
