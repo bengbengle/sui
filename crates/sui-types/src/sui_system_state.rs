@@ -14,9 +14,7 @@ use crate::{
     SUI_FRAMEWORK_ADDRESS,
 };
 use fastcrypto::traits::ToFromBytes;
-use move_core_types::{
-    account_address::AccountAddress, ident_str, identifier::IdentStr, language_storage::StructTag,
-};
+use move_core_types::{ident_str, identifier::IdentStr, language_storage::StructTag};
 use narwhal_config::Committee as NarwhalCommittee;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};

@@ -3,10 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    authority::{AuthorityState, ReconfigConsensusMessage},
+    authority::AuthorityState,
     consensus_adapter::{ConsensusAdapter, ConsensusAdapterMetrics},
-    consensus_validator::SuiTxValidator,
-    metrics::start_timer,
 };
 use anyhow::Result;
 use async_trait::async_trait;
@@ -23,19 +21,11 @@ use sui_network::{
     api::{Validator, ValidatorServer},
     tonic,
 };
+use sui_types::messages_checkpoint::{CheckpointRequest, CheckpointResponse};
 use sui_types::{error::*, messages::*};
 use tap::TapFallible;
-use tokio::{sync::mpsc::Receiver, task::JoinHandle, time::sleep};
-use narwhal_types::TransactionsClient;
-use sui_types::messages_checkpoint::CheckpointRequest;
+use tokio::{task::JoinHandle, time::sleep};
 use tracing::{debug, info, Instrument};
-use crate::checkpoints::{
-    CheckpointMetrics, CheckpointService, CheckpointStore, SendCheckpointToStateSync,
-    SubmitCheckpointToConsensus,
-};
-use crate::consensus_handler::ConsensusHandler;
-use sui_types::{error::*, messages::*};
-
 
 #[cfg(test)]
 #[path = "unit_tests/server_tests.rs"]
@@ -257,68 +247,6 @@ impl ValidatorService {
         consensus_adapter: Arc<ConsensusAdapter>,
         prometheus_registry: Registry,
     ) -> Result<Self> {
-<<<<<<< HEAD
-        let consensus_config = config
-            .consensus_config()
-            .ok_or_else(|| anyhow!("Validator is missing consensus config"))?;
-
-        let consensus_address = consensus_config.address().to_owned();
-        let consensus_client = TransactionsClient::new(
-            mysten_network::client::connect_lazy(&consensus_address)
-                .expect("Failed to connect to consensus"),
-        );
-
-        let certified_checkpoint_output = SendCheckpointToStateSync::new(state_sync_handle);
-
-        let ca_metrics = ConsensusAdapterMetrics::new(&prometheus_registry);
-        // The consensus adapter allows the authority to send user certificates through consensus.
-        let consensus_adapter =
-            ConsensusAdapter::new(Box::new(consensus_client), state.clone(), ca_metrics);
-
-        let checkpoint_output = Box::new(SubmitCheckpointToConsensus {
-            sender: consensus_adapter.clone(),
-            signer: state.secret.clone(),
-            authority: config.protocol_public_key(),
-        });
-
-        let checkpoint_service = CheckpointService::spawn(
-            state.clone(),
-            checkpoint_store,
-            Box::new(state.database.clone()),
-            checkpoint_output,
-            Box::new(certified_checkpoint_output),
-            CheckpointMetrics::new(&prometheus_registry),
-        );
-
-        let consensus_keypair = config.protocol_key_pair().copy();
-        let consensus_worker_keypair = config.worker_key_pair().copy();
-        let consensus_committee = config.genesis()?.narwhal_committee().load();
-        let consensus_worker_cache = config.narwhal_worker_cache()?;
-        let consensus_storage_base_path = consensus_config.db_path().to_path_buf();
-        let consensus_execution_state = ConsensusHandler::new(state.clone(), checkpoint_service);
-        let consensus_execution_state = Arc::new(consensus_execution_state);
-
-        let consensus_parameters = consensus_config.narwhal_config().to_owned();
-        let network_keypair = config.network_key_pair.copy();
-
-        let registry = prometheus_registry.clone();
-        let tx_validator = SuiTxValidator::new(state.clone(), &registry);
-        spawn_monitored_task!(narwhal_node::restarter::NodeRestarter::watch(
-            consensus_keypair,
-            network_keypair,
-            vec![(0, consensus_worker_keypair)],
-            &consensus_committee,
-            consensus_worker_cache,
-            consensus_storage_base_path,
-            consensus_execution_state,
-            consensus_parameters,
-            tx_validator,
-            rx_reconfigure_consensus,
-            &registry,
-        ));
-
-=======
->>>>>>> 86b517004 (integrate NarwhalManager into sui reconfiguration process)
         Ok(Self {
             state,
             consensus_adapter,

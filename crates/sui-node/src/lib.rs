@@ -57,16 +57,16 @@ pub mod admin;
 mod handle;
 pub mod metrics;
 pub use handle::SuiNodeHandle;
-use sui_core::authority::ReconfigConsensusMessage;
-use sui_json_rpc::coin_api::CoinReadApi;
 use narwhal_types::TransactionsClient;
 use sui_core::checkpoints::{
     CheckpointMetrics, CheckpointService, CheckpointStore, SendCheckpointToStateSync,
     SubmitCheckpointToConsensus,
 };
-use sui_core::consensus_adapter::{ConsensusAdapter, ConsensusAdapterMetrics, SuiTxValidator};
+use sui_core::consensus_adapter::{ConsensusAdapter, ConsensusAdapterMetrics};
 use sui_core::consensus_handler::ConsensusHandler;
+use sui_core::consensus_validator::SuiTxValidator;
 use sui_core::narwhal_manager::{run_narwhal_manager, NarwhalConfiguration, NarwhalManager};
+use sui_json_rpc::coin_api::CoinReadApi;
 use sui_types::committee::EpochId;
 
 pub struct SuiNode {
@@ -84,13 +84,9 @@ pub struct SuiNode {
 
     _p2p_network: anemo::Network,
     _discovery: discovery::Handle,
-<<<<<<< HEAD
-    _state_sync: state_sync::Handle,
-    _checkpoint_executor_handle: tokio::task::JoinHandle<()>,
-=======
     state_sync: state_sync::Handle,
     checkpoint_store: Arc<CheckpointStore>,
->>>>>>> 86b517004 (integrate NarwhalManager into sui reconfiguration process)
+    _checkpoint_executor_handle: tokio::task::JoinHandle<()>,
 
     reconfig_channel: (
         tokio::sync::mpsc::Sender<EpochId>,
@@ -286,13 +282,9 @@ impl SuiNode {
             prometheus_registry,
             _p2p_network: p2p_network,
             _discovery: discovery_handle,
-<<<<<<< HEAD
-            _state_sync: state_sync_handle,
             _checkpoint_executor_handle: checkpoint_executor_handle,
-=======
             state_sync: state_sync_handle,
             checkpoint_store,
->>>>>>> 86b517004 (integrate NarwhalManager into sui reconfiguration process)
             reconfig_channel,
 
             #[cfg(msim)]
@@ -454,11 +446,11 @@ impl SuiNode {
             primary_keypair: config.protocol_key_pair().copy(),
             network_keypair: config.network_key_pair.copy(),
             worker_ids_and_keypairs: vec![(0, config.worker_key_pair().copy())],
-            worker_cache: config.genesis()?.narwhal_worker_cache(),
+            worker_cache: config.narwhal_worker_cache()?,
             storage_base_path: consensus_config.db_path().to_path_buf(),
             parameters: consensus_config.narwhal_config().to_owned(),
             execution_state: Arc::new(ConsensusHandler::new(state.clone(), checkpoint_service)),
-            tx_validator: SuiTxValidator::default(),
+            tx_validator: SuiTxValidator::new(state.clone(), &prometheus_registry),
         };
 
         let (tx_start, tr_start) = channel(1);
@@ -575,28 +567,6 @@ impl SuiNode {
                 .expect("Reading Sui system state object cannot fail");
             let new_committee = system_state.get_current_epoch_committee();
             assert_eq!(next_epoch, new_committee.committee.epoch);
-<<<<<<< HEAD
-            let was_validator = self.state.is_validator();
-            assert_eq!(was_validator, self.validator_server_info.is_some());
-            if was_validator {
-                info!("Reconfiguring the validator.");
-                info!("Shutting down Narwhal");
-                // TODO: Shutdown Narwhal here.
-            }
-
-            self.state
-                .reconfigure(new_committee.committee)
-                .expect("Reconfigure authority state cannot fail");
-            info!("Validator State has been reconfigured");
-
-            if self.state.is_validator() {
-                // If the node is a validator in the new epoch, we need to make sure validator
-                // service is running in the new epoch.
-                if was_validator {
-                    // If we were a validator in previous epoch, we don't need to start grpc server.
-                    // Only need to start Narwhal.
-                    // TODO: Start Narwhal here.
-=======
             if let Some(ref narwhal_manager) = self.narwhal_manager {
                 info!("Reconfiguring the validator.");
                 info!("Shutting down Narwhal");
@@ -618,26 +588,11 @@ impl SuiNode {
                         ))
                         .await?;
                     // TODO: (Laura) wait for start complete signal
->>>>>>> 86b517004 (integrate NarwhalManager into sui reconfiguration process)
+
                     info!("Starting Narwhal");
                 } else {
-                    // TODO: It might be easier to require node operator to manually restart the node
-                    // for this transition.
-                    info!("Promoting the node from fullnode to validator, starting grpc server");
-                    self.validator_server_info = Self::start_grpc_validator_service(
-                        &self.config,
-                        self.state.clone(),
-                        self.checkpoint_store.clone(),
-                        &self._state_sync,
-                        &self._prometheus_registry,
-                    )
-                    .await
-                    .expect("Starting grpc server cannot fail");
+                    info!("This node is no longer a validator after reconfiguration");
                 }
-<<<<<<< HEAD
-            } else {
-                info!("This node is no longer a validator after reconfiguration");
-=======
             } else if self.state.is_validator() {
                 info!("Promoting the node from fullnode to validator, starting grpc server");
 
@@ -652,7 +607,6 @@ impl SuiNode {
                     .await?;
                 self.validator_server_handle = Some(validator_server_handle);
                 self.narwhal_manager = Some(narwhal_manager);
->>>>>>> 86b517004 (integrate NarwhalManager into sui reconfiguration process)
             }
             info!("Reconfiguration finished");
         }
