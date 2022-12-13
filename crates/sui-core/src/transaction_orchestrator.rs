@@ -22,7 +22,7 @@ use prometheus::{
     register_int_gauge_vec_with_registry, register_int_gauge_with_registry, Registry,
 };
 use std::path::Path;
-use sui_storage::fullnode_pending_tx_log::FullNodePendingTransactionLog;
+use sui_storage::write_path_pending_tx_log::WritePathPendingTransactionLog;
 use sui_types::error::{SuiError, SuiResult};
 use sui_types::messages::{
     CertifiedTransaction, CertifiedTransactionEffects, ExecuteTransactionRequest,
@@ -48,7 +48,7 @@ pub struct TransactiondOrchestrator<A> {
     node_sync_handle: NodeSyncHandle,
     validator_state: Arc<AuthorityState>,
     _local_executor_handle: JoinHandle<()>,
-    pending_tx_log: Arc<FullNodePendingTransactionLog>,
+    pending_tx_log: Arc<WritePathPendingTransactionLog>,
     metrics: Arc<TransactionOrchestratorMetrics>,
 }
 
@@ -71,7 +71,7 @@ where
         let handle_clone = node_sync_handle.clone();
         let metrics = Arc::new(TransactionOrchestratorMetrics::new(prometheus_registry));
         let metrics_clone = metrics.clone();
-        let pending_tx_log = Arc::new(FullNodePendingTransactionLog::new(
+        let pending_tx_log = Arc::new(WritePathPendingTransactionLog::new(
             parent_path.join("fullnode_pending_transactions"),
         ));
         let pending_tx_log_clone = pending_tx_log.clone();
@@ -260,7 +260,7 @@ where
         validator_state: Arc<AuthorityState>,
         node_sync_handle: NodeSyncHandle,
         mut effects_receiver: Receiver<(CertifiedTransaction, CertifiedTransactionEffects)>,
-        pending_transaction_log: Arc<FullNodePendingTransactionLog>,
+        pending_transaction_log: Arc<WritePathPendingTransactionLog>,
         metrics: Arc<TransactionOrchestratorMetrics>,
     ) {
         loop {

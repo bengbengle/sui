@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-//! FullNodePendingTransactionLog is Write Ahead Log uesd in Transaction Orchestrator
-//! for transaction submission processing. It plays two roles:
+//! WritePathPendingTransactionLog is used in the transaction write path (e.g. in
+//! TranasctionOrchestrator) for transaction submission processing. It helps to achieve:
 //! 1. At one time, a transaction is only processed once.
 //! 2. When Fullnode crashes and restarts, the pending transaction will be loaded and retried.
 
@@ -19,19 +19,19 @@ use typed_store_derive::DBMapUtils;
 pub type IsFirstRecord = bool;
 
 #[derive(DBMapUtils)]
-struct FullNodePendingTransactionTable {
+struct WritePathPendingTransactionTable {
     logs: DBMap<TransactionDigest, TrustedTransction>,
 }
 
-pub struct FullNodePendingTransactionLog {
-    pending_transactions: FullNodePendingTransactionTable,
+pub struct WritePathPendingTransactionLog {
+    pending_transactions: WritePathPendingTransactionTable,
     mutex_table: MutexTable<TransactionDigest>,
 }
 
-impl FullNodePendingTransactionLog {
+impl WritePathPendingTransactionLog {
     pub fn new(path: PathBuf) -> Self {
         let pending_transactions =
-            FullNodePendingTransactionTable::open_tables_read_write(path, None, None);
+            WritePathPendingTransactionTable::open_tables_read_write(path, None, None);
         Self {
             pending_transactions,
             mutex_table: MutexTable::new(MUTEX_TABLE_SIZE, MUTEX_TABLE_SHARD_SIZE),
@@ -80,7 +80,7 @@ mod tests {
     #[tokio::test]
     async fn test_pending_tx_log_basic() -> anyhow::Result<()> {
         let temp_dir = tempfile::tempdir().unwrap();
-        let pending_txes = FullNodePendingTransactionLog::new(temp_dir.path().to_path_buf());
+        let pending_txes = WritePathPendingTransactionLog::new(temp_dir.path().to_path_buf());
         let tx = create_fake_transaction();
         let tx_digest = *tx.digest();
         assert!(pending_txes.write_pending_transaction(&tx).await.unwrap());
