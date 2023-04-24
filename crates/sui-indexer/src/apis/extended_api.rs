@@ -5,17 +5,22 @@ use async_trait::async_trait;
 use jsonrpsee::core::RpcResult;
 use jsonrpsee::RpcModule;
 
-use sui_json_rpc::api::{
-    validate_limit, ExtendedApiServer, QUERY_MAX_RESULT_LIMIT_CHECKPOINTS,
-    QUERY_MAX_RESULT_LIMIT_OBJECTS,
-};
+use sui_json_rpc::api::{ validate_limit, ExtendedApiServer, QUERY_MAX_RESULT_LIMIT_CHECKPOINTS, QUERY_MAX_RESULT_LIMIT_OBJECTS };
 use sui_json_rpc::SuiRpcModule;
-use sui_json_rpc_types::{
-    CheckpointedObjectID, EpochInfo, EpochPage, MoveCallMetrics, NetworkMetrics, Page,
-    QueryObjectsPage, SuiObjectDataFilter, SuiObjectResponse, SuiObjectResponseQuery,
-};
 use sui_open_rpc::Module;
 use sui_types::sui_serde::BigInt;
+use sui_json_rpc_types::{
+    CheckpointedObjectID, 
+    EpochInfo, 
+    EpochPage, 
+    MoveCallMetrics, 
+    NetworkMetrics, 
+    Page,
+    QueryObjectsPage, 
+    SuiObjectDataFilter, 
+    SuiObjectResponse, 
+    SuiObjectResponseQuery,
+};
 
 use crate::errors::IndexerError;
 use crate::store::IndexerStore;
@@ -25,16 +30,12 @@ pub(crate) struct ExtendedApi<S> {
 }
 
 impl<S: IndexerStore> ExtendedApi<S> {
+
     pub fn new(state: S) -> Self {
         Self { state }
     }
 
-    async fn query_objects_internal(
-        &self,
-        query: SuiObjectResponseQuery,
-        cursor: Option<CheckpointedObjectID>,
-        limit: Option<usize>,
-    ) -> Result<QueryObjectsPage, IndexerError> {
+    async fn query_objects_internal(&self, query: SuiObjectResponseQuery, cursor: Option<CheckpointedObjectID>, limit: Option<usize>) -> Result<QueryObjectsPage, IndexerError> {
         let limit = validate_limit(limit, QUERY_MAX_RESULT_LIMIT_OBJECTS)?;
 
         let at_checkpoint = if let Some(CheckpointedObjectID {
@@ -86,21 +87,16 @@ impl<S: IndexerStore> ExtendedApi<S> {
 
 #[async_trait]
 impl<S: IndexerStore + Sync + Send + 'static> ExtendedApiServer for ExtendedApi<S> {
-    async fn get_epochs(
-        &self,
-        cursor: Option<BigInt<u64>>,
-        limit: Option<usize>,
-        descending_order: Option<bool>,
-    ) -> RpcResult<EpochPage> {
+
+    async fn get_epochs(&self, cursor: Option<BigInt<u64>>, limit: Option<usize>, descending_order: Option<bool>) -> RpcResult<EpochPage> {
+        
         let limit = validate_limit(limit, QUERY_MAX_RESULT_LIMIT_CHECKPOINTS)?;
-        let mut epochs = self
-            .state
-            .get_epochs(cursor.map(|c| *c), limit + 1, descending_order)
-            .await?;
+        let mut epochs = self.state.get_epochs(cursor.map(|c| *c), limit + 1, descending_order).await?;
+        epochs.truncate(limit);
 
         let has_next_page = epochs.len() > limit;
-        epochs.truncate(limit);
         let next_cursor = epochs.last().map(|e| e.epoch);
+
         Ok(Page {
             data: epochs,
             next_cursor: next_cursor.map(|id| id.into()),
@@ -112,12 +108,7 @@ impl<S: IndexerStore + Sync + Send + 'static> ExtendedApiServer for ExtendedApi<
         Ok(self.state.get_current_epoch().await?)
     }
 
-    async fn query_objects(
-        &self,
-        query: SuiObjectResponseQuery,
-        cursor: Option<CheckpointedObjectID>,
-        limit: Option<usize>,
-    ) -> RpcResult<QueryObjectsPage> {
+    async fn query_objects(&self, query: SuiObjectResponseQuery, cursor: Option<CheckpointedObjectID>, limit: Option<usize>) -> RpcResult<QueryObjectsPage> {
         Ok(self.query_objects_internal(query, cursor, limit).await?)
     }
 
@@ -130,10 +121,8 @@ impl<S: IndexerStore + Sync + Send + 'static> ExtendedApiServer for ExtendedApi<
     }
 }
 
-impl<S> SuiRpcModule for ExtendedApi<S>
-where
-    S: IndexerStore + Sync + Send + 'static,
-{
+impl<S> SuiRpcModule for ExtendedApi<S> where S: IndexerStore + Sync + Send + 'static {
+
     fn rpc(self) -> RpcModule<Self> {
         self.into_rpc()
     }

@@ -163,7 +163,7 @@ impl JsonRpcServerBuilder {
         let handle = server.start(self.module)?;
 
         info!(local_addr =? addr, "Sui JSON-RPC server listening on {addr}");
-        info!("Available JSON-RPC methods : {:?}", methods_names);
+        // info!("Available JSON-RPC methods : {:?}", methods_names);
 
         Ok(handle)
     }

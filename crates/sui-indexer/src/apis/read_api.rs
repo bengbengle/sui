@@ -28,15 +28,15 @@ use sui_json_rpc_types::SuiLoadedChildObjectsResponse;
 pub(crate) struct ReadApi<S> {
     fullnode: HttpClient,
     state: S,
-    migrated_methods: Vec<String>,
+    // migrated_methods: Vec<String>,
 }
 
 impl<S: IndexerStore> ReadApi<S> {
-    pub fn new(state: S, fullnode_client: HttpClient, migrated_methods: Vec<String>) -> Self {
+    pub fn new(state: S, fullnode_client: HttpClient) -> Self {
         Self {
             state,
             fullnode: fullnode_client,
-            migrated_methods,
+            // migrated_methods,
         }
     }
 
@@ -135,17 +135,6 @@ where
         object_id: ObjectID,
         options: Option<SuiObjectDataOptions>,
     ) -> RpcResult<SuiObjectResponse> {
-        if !self.migrated_methods.contains(&"get_object".into()) {
-            let obj_guard = self
-                .state
-                .indexer_metrics()
-                .get_object_latency
-                .start_timer();
-            let obj_resp = block_on(async { self.fullnode.get_object(object_id, options).await });
-            obj_guard.stop_and_record();
-            return obj_resp;
-        }
-
         Ok(block_on(self.get_object_internal(object_id, options))?)
     }
 
@@ -156,31 +145,10 @@ where
         object_ids: Vec<ObjectID>,
         options: Option<SuiObjectDataOptions>,
     ) -> RpcResult<Vec<SuiObjectResponse>> {
-        let objs_guard = self
-            .state
-            .indexer_metrics()
-            .multi_get_objects_latency
-            .start_timer();
-        let objs_resp =
-            block_on(async { self.fullnode.multi_get_objects(object_ids, options).await });
-        objs_guard.stop_and_record();
-        objs_resp
+        block_on(async { self.fullnode.multi_get_objects(object_ids, options).await })
     }
 
     async fn get_total_transaction_blocks(&self) -> RpcResult<BigInt<u64>> {
-        if !self
-            .migrated_methods
-            .contains(&"get_total_transaction_blocks".to_string())
-        {
-            let total_tx_guard = self
-                .state
-                .indexer_metrics()
-                .get_total_transaction_blocks_latency
-                .start_timer();
-            let total_tx_resp = self.fullnode.get_total_transaction_blocks().await;
-            total_tx_guard.stop_and_record();
-            return total_tx_resp;
-        }
         Ok(self.get_total_transaction_blocks_internal().await?.into())
     }
 
@@ -189,22 +157,7 @@ where
         digest: TransactionDigest,
         options: Option<SuiTransactionBlockResponseOptions>,
     ) -> RpcResult<SuiTransactionBlockResponse> {
-        if !self
-            .migrated_methods
-            .contains(&"get_transaction_block".to_string())
-        {
-            let tx_guard = self
-                .state
-                .indexer_metrics()
-                .get_transaction_block_latency
-                .start_timer();
-            let tx_resp = self.fullnode.get_transaction_block(digest, options).await;
-            tx_guard.stop_and_record();
-            return tx_resp;
-        }
-        Ok(self
-            .get_transaction_block_internal(&digest, options)
-            .await?)
+        Ok(self.get_transaction_block_internal(&digest, options).await?)
     }
 
     // TODO: remove this after `futures::executor::block_on` is removed. @Ge @Chris
@@ -214,44 +167,13 @@ where
         digests: Vec<TransactionDigest>,
         options: Option<SuiTransactionBlockResponseOptions>,
     ) -> RpcResult<Vec<SuiTransactionBlockResponse>> {
-        if !self
-            .migrated_methods
-            .contains(&"multi_get_transaction_blocks".to_string())
-        {
-            let multi_tx_guard = self
-                .state
-                .indexer_metrics()
-                .multi_get_transaction_blocks_latency
-                .start_timer();
-            let multi_tx_resp =
-                block_on(self.fullnode.multi_get_transaction_blocks(digests, options));
-            multi_tx_guard.stop_and_record();
-            return multi_tx_resp;
-        }
-        Ok(block_on(
-            self.multi_get_transaction_blocks_internal(&digests, options),
-        )?)
+        Ok(block_on(self.multi_get_transaction_blocks_internal(&digests, options))?)
     }
 
     // TODO: remove this after `futures::executor::block_on` is removed. @Ge @Chris
     #[allow(clippy::disallowed_methods)]
-    fn try_get_past_object(
-        &self,
-        object_id: ObjectID,
-        version: SequenceNumber,
-        options: Option<SuiObjectDataOptions>,
-    ) -> RpcResult<SuiPastObjectResponse> {
-        let past_obj_guard = self
-            .state
-            .indexer_metrics()
-            .try_get_past_object_latency
-            .start_timer();
-        let past_obj_resp = block_on(
-            self.fullnode
-                .try_get_past_object(object_id, version, options),
-        );
-        past_obj_guard.stop_and_record();
-        past_obj_resp
+    fn try_get_past_object(&self, object_id: ObjectID, version: SequenceNumber, options: Option<SuiObjectDataOptions>) -> RpcResult<SuiPastObjectResponse> {
+        block_on(self.fullnode.try_get_past_object(object_id, version, options))
     }
 
     // TODO: remove this after `futures::executor::block_on` is removed. @Ge @Chris
@@ -261,53 +183,14 @@ where
         past_objects: Vec<SuiGetPastObjectRequest>,
         options: Option<SuiObjectDataOptions>,
     ) -> RpcResult<Vec<SuiPastObjectResponse>> {
-        let multi_past_obj_guard = self
-            .state
-            .indexer_metrics()
-            .try_multi_get_past_objects_latency
-            .start_timer();
-        let multi_past_obj_resp = block_on(
-            self.fullnode
-                .try_multi_get_past_objects(past_objects, options),
-        );
-        multi_past_obj_guard.stop_and_record();
-        multi_past_obj_resp
+        block_on(self.fullnode.try_multi_get_past_objects(past_objects, options))
     }
 
     async fn get_latest_checkpoint_sequence_number(&self) -> RpcResult<BigInt<u64>> {
-        if !self
-            .migrated_methods
-            .contains(&"get_latest_checkpoint_sequence_number".to_string())
-        {
-            let latest_cp_guard = self
-                .state
-                .indexer_metrics()
-                .get_latest_checkpoint_sequence_number_latency
-                .start_timer();
-            let latest_cp_resp = self.fullnode.get_latest_checkpoint_sequence_number().await;
-            latest_cp_guard.stop_and_record();
-            return latest_cp_resp;
-        }
-        Ok(self
-            .get_latest_checkpoint_sequence_number_internal()
-            .await?
-            .into())
+        Ok(self.get_latest_checkpoint_sequence_number_internal().await?.into())
     }
 
     async fn get_checkpoint(&self, id: CheckpointId) -> RpcResult<Checkpoint> {
-        if !self
-            .migrated_methods
-            .contains(&"get_checkpoint".to_string())
-        {
-            let cp_guard = self
-                .state
-                .indexer_metrics()
-                .get_checkpoint_latency
-                .start_timer();
-            let cp_resp = self.fullnode.get_checkpoint(id).await;
-            cp_guard.stop_and_record();
-            return cp_resp;
-        }
         Ok(self.state.get_checkpoint(id).await?)
     }
 
@@ -319,17 +202,7 @@ where
         limit: Option<usize>,
         descending_order: bool,
     ) -> RpcResult<CheckpointPage> {
-        let cps_guard = self
-            .state
-            .indexer_metrics()
-            .get_checkpoints_latency
-            .start_timer();
-        let cps_resp = block_on(
-            self.fullnode
-                .get_checkpoints(cursor, limit, descending_order),
-        );
-        cps_guard.stop_and_record();
-        cps_resp
+        block_on(self.fullnode.get_checkpoints(cursor, limit, descending_order))
     }
 
     // TODO: remove this after `futures::executor::block_on` is removed. @Ge @Chris
@@ -346,14 +219,7 @@ where
     // TODO: remove this after `futures::executor::block_on` is removed. @Ge @Chris
     #[allow(clippy::disallowed_methods)]
     fn get_events(&self, transaction_digest: TransactionDigest) -> RpcResult<Vec<SuiEvent>> {
-        let events_guard = self
-            .state
-            .indexer_metrics()
-            .get_events_latency
-            .start_timer();
-        let events_resp = block_on(self.fullnode.get_events(transaction_digest));
-        events_guard.stop_and_record();
-        events_resp
+        block_on(self.fullnode.get_events(transaction_digest))
     }
     // TODO: remove this after `futures::executor::block_on` is removed. @Ge @Chris
     #[allow(clippy::disallowed_methods)]
@@ -361,14 +227,7 @@ where
         &self,
         digest: TransactionDigest,
     ) -> RpcResult<SuiLoadedChildObjectsResponse> {
-        let dynamic_fields_load_obj_guard = self
-            .state
-            .indexer_metrics()
-            .get_loaded_child_objects_latency
-            .start_timer();
-        let dyn_fields_resp = block_on(self.fullnode.get_loaded_child_objects(digest));
-        dynamic_fields_load_obj_guard.stop_and_record();
-        dyn_fields_resp
+        block_on(self.fullnode.get_loaded_child_objects(digest))
     }
 }
 

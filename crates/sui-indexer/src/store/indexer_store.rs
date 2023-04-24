@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use async_trait::async_trait;
-use prometheus::Histogram;
+// use prometheus::Histogram;
 
 use move_core_types::identifier::Identifier;
 use sui_json_rpc_types::{
@@ -19,7 +19,7 @@ use sui_types::object::ObjectRead;
 use sui_types::storage::ObjectStore;
 
 use crate::errors::IndexerError;
-use crate::metrics::IndexerMetrics;
+// use crate::metrics::IndexerMetrics;
 use crate::models::addresses::Address;
 use crate::models::checkpoints::Checkpoint;
 use crate::models::epoch::DBEpochInfo;
@@ -37,25 +37,12 @@ pub trait IndexerStore {
 
     async fn get_latest_checkpoint_sequence_number(&self) -> Result<i64, IndexerError>;
     async fn get_checkpoint(&self, id: CheckpointId) -> Result<RpcCheckpoint, IndexerError>;
-    async fn get_checkpoint_sequence_number(
-        &self,
-        digest: CheckpointDigest,
-    ) -> Result<CheckpointSequenceNumber, IndexerError>;
+    async fn get_checkpoint_sequence_number(&self, digest: CheckpointDigest) -> Result<CheckpointSequenceNumber, IndexerError>;
 
     async fn get_event(&self, id: EventID) -> Result<Event, IndexerError>;
-    async fn get_events(
-        &self,
-        query: EventFilter,
-        cursor: Option<EventID>,
-        limit: Option<usize>,
-        descending_order: bool,
-    ) -> Result<EventPage, IndexerError>;
+    async fn get_events(&self, query: EventFilter, cursor: Option<EventID>, limit: Option<usize>, descending_order: bool) -> Result<EventPage, IndexerError>;
 
-    async fn get_object(
-        &self,
-        object_id: ObjectID,
-        version: Option<SequenceNumber>,
-    ) -> Result<ObjectRead, IndexerError>;
+    async fn get_object(&self, object_id: ObjectID, version: Option<SequenceNumber>) -> Result<ObjectRead, IndexerError>;
 
     async fn query_objects_history(
         &self,
@@ -75,12 +62,8 @@ pub trait IndexerStore {
     async fn get_total_transaction_number_from_checkpoints(&self) -> Result<i64, IndexerError>;
 
     // TODO: combine all get_transaction* methods
-    async fn get_transaction_by_digest(&self, tx_digest: &str)
-        -> Result<Transaction, IndexerError>;
-    async fn multi_get_transactions_by_digests(
-        &self,
-        tx_digests: &[String],
-    ) -> Result<Vec<Transaction>, IndexerError>;
+    async fn get_transaction_by_digest(&self, tx_digest: &str) -> Result<Transaction, IndexerError>;
+    async fn multi_get_transactions_by_digests(&self, tx_digests: &[String]) -> Result<Vec<Transaction>, IndexerError>;
 
     async fn compose_sui_transaction_block_response(
         &self,
@@ -187,28 +170,26 @@ pub trait IndexerStore {
         tx: Transaction,
         tx_object_changes: TransactionObjectChanges,
     ) -> Result<usize, IndexerError>;
-    // TODO(gegaowp): keep this method in this trait for now for easier reverting,
-    // will remove it if it's no longer needed.
+
     fn persist_all_checkpoint_data(
         &self,
         data: &TemporaryCheckpointStore,
     ) -> Result<usize, IndexerError>;
+
     async fn persist_checkpoint_transactions(
         &self,
         checkpoint: &Checkpoint,
         transactions: &[Transaction],
     ) -> Result<usize, IndexerError>;
+
     async fn persist_object_changes(
         &self,
         checkpoint_seq: i64,
         tx_object_changes: &[TransactionObjectChanges],
-        object_mutation_latency: Histogram,
-        object_deletion_latency: Histogram,
     ) -> Result<(), IndexerError>;
     async fn persist_events(&self, events: &[Event]) -> Result<(), IndexerError>;
     async fn persist_addresses(&self, addresses: &[Address]) -> Result<(), IndexerError>;
     async fn persist_packages(&self, packages: &[Package]) -> Result<(), IndexerError>;
-    // NOTE: these tables are for tx query performance optimization
     async fn persist_transaction_index_tables(
         &self,
         input_objects: &[InputObject],
@@ -228,8 +209,6 @@ pub trait IndexerStore {
     async fn get_current_epoch(&self) -> Result<EpochInfo, IndexerError>;
 
     fn module_cache(&self) -> &Self::ModuleCache;
-
-    fn indexer_metrics(&self) -> &IndexerMetrics;
 }
 
 #[derive(Clone, Debug)]

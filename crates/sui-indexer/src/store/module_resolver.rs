@@ -24,10 +24,13 @@ impl IndexerModuleResolver {
     }
 }
 
-const LATEST_MODULE_QUERY: &str = "SELECT (t2.module).data
-FROM (SELECT UNNEST(data) AS module
-      FROM (SELECT data FROM packages WHERE package_id = $1 ORDER BY version DESC FETCH FIRST 1 ROW ONLY) t1) t2
-WHERE (module).name = $2;";
+const LATEST_MODULE_QUERY: &str = "
+        SELECT (t2.module).data
+        FROM (
+            SELECT UNNEST(data) AS module FROM (SELECT data FROM packages WHERE package_id = $1 ORDER BY version DESC FETCH FIRST 1 ROW ONLY) t1
+        ) t2
+        WHERE (module).name = $2;
+    ";
 
 impl ModuleResolver for IndexerModuleResolver {
     type Error = IndexerError;
@@ -42,7 +45,6 @@ impl ModuleResolver for IndexerModuleResolver {
         let package_id = ObjectID::from(*id.address()).to_string();
         let module_name = id.name().to_string();
 
-        // TODO: do we need to make this async?
         let module_bytes = read_only_blocking!(&self.cp, |conn| {
             diesel::sql_query(LATEST_MODULE_QUERY)
                 .bind::<Text, _>(package_id)

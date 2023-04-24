@@ -14,10 +14,8 @@ use jsonrpsee::{RpcModule, SubscriptionSink};
 
 use move_core_types::identifier::Identifier;
 use sui_core::event_handler::EventHandler;
-use sui_json_rpc::api::{
-    validate_limit, IndexerApiClient, IndexerApiServer, QUERY_MAX_RESULT_LIMIT,
-    QUERY_MAX_RESULT_LIMIT_OBJECTS,
-};
+
+use sui_json_rpc::api::{validate_limit, IndexerApiClient, IndexerApiServer, QUERY_MAX_RESULT_LIMIT, QUERY_MAX_RESULT_LIMIT_OBJECTS};
 use sui_json_rpc::indexer_api::spawn_subscription;
 use sui_json_rpc::SuiRpcModule;
 use sui_json_rpc_types::{
@@ -39,21 +37,21 @@ pub(crate) struct IndexerApi<S> {
     state: S,
     fullnode: HttpClient,
     event_handler: Arc<EventHandler>,
-    migrated_methods: Vec<String>,
+    // migrated_methods: Vec<String>,
 }
 
 impl<S: IndexerStore> IndexerApi<S> {
     pub fn new(
         state: S,
         fullnode_client: HttpClient,
+        // migrated_methods: Vec<String>,
         event_handler: Arc<EventHandler>,
-        migrated_methods: Vec<String>,
     ) -> Self {
         Self {
             state,
             fullnode: fullnode_client,
             event_handler,
-            migrated_methods,
+            // migrated_methods,
         }
     }
 
@@ -327,24 +325,9 @@ where
         cursor: Option<ObjectID>,
         limit: Option<usize>,
     ) -> RpcResult<ObjectsPage> {
-        if !self
-            .migrated_methods
-            .contains(&"get_owned_objects".to_string())
-        {
-            let owned_obj_guard = self
-                .state
-                .indexer_metrics()
-                .get_owned_objects_latency
-                .start_timer();
-            let owned_obj_resp = block_on(
-                self.fullnode
-                    .get_owned_objects(address, query, cursor, limit),
-            );
-            owned_obj_guard.stop_and_record();
-            return owned_obj_resp;
-        }
         block_on(self.get_owned_objects_internal(address, query, cursor, limit))
     }
+    
     // TODO: remove this after `futures::executor::block_on` is removed. @Ge @Chris
     #[allow(clippy::disallowed_methods)]
     fn query_transaction_blocks(
@@ -354,30 +337,8 @@ where
         limit: Option<usize>,
         descending_order: Option<bool>,
     ) -> RpcResult<TransactionBlocksPage> {
-        if !self
-            .migrated_methods
-            .contains(&"query_transaction_blocks".to_string())
-        {
-            let query_tx_guard = self
-                .state
-                .indexer_metrics()
-                .query_transaction_blocks_latency
-                .start_timer();
-            let query_tx_resp = block_on(self.fullnode.query_transaction_blocks(
-                query,
-                cursor,
-                limit,
-                descending_order,
-            ));
-            query_tx_guard.stop_and_record();
-            return query_tx_resp;
-        }
-        Ok(block_on(self.query_transaction_blocks_internal(
-            query,
-            cursor,
-            limit,
-            descending_order,
-        ))?)
+        
+        Ok(block_on(self.query_transaction_blocks_internal(query, cursor, limit, descending_order))?)
     }
 
     // TODO: remove this after `futures::executor::block_on` is removed. @Ge @Chris
@@ -390,20 +351,14 @@ where
         limit: Option<usize>,
         descending_order: Option<bool>,
     ) -> RpcResult<EventPage> {
-        if !self.migrated_methods.contains(&"query_events".to_string()) {
-            let query_events_guard = self
-                .state
-                .indexer_metrics()
-                .query_events_latency
-                .start_timer();
-            let query_events_resp =
-                block_on(
-                    self.fullnode
-                        .query_events(query, cursor, limit, descending_order),
-                );
-            query_events_guard.stop_and_record();
-            return query_events_resp;
-        }
+        // if !self.migrated_methods.contains(&"query_events".to_string()) {
+        //     let query_events_resp =
+        //         block_on(
+        //             self.fullnode
+        //                 .query_events(query, cursor, limit, descending_order),
+        //         );
+        //     return query_events_resp;
+        // }
         Ok(block_on(self.query_events_internal(
             query,
             cursor,
@@ -420,17 +375,8 @@ where
         cursor: Option<ObjectID>,
         limit: Option<usize>,
     ) -> RpcResult<DynamicFieldPage> {
-        let df_guard = self
-            .state
-            .indexer_metrics()
-            .get_dynamic_fields_latency
-            .start_timer();
-        let df_resp = block_on(
-            self.fullnode
-                .get_dynamic_fields(parent_object_id, cursor, limit),
-        );
-        df_guard.stop_and_record();
-        df_resp
+        
+        block_on(self.fullnode.get_dynamic_fields(parent_object_id, cursor, limit))
     }
 
     // TODO: remove this after `futures::executor::block_on` is removed. @Ge @Chris
@@ -440,17 +386,8 @@ where
         parent_object_id: ObjectID,
         name: DynamicFieldName,
     ) -> RpcResult<SuiObjectResponse> {
-        let df_obj_guard = self
-            .state
-            .indexer_metrics()
-            .get_dynamic_field_object_latency
-            .start_timer();
-        let df_obj_resp = block_on(
-            self.fullnode
-                .get_dynamic_field_object(parent_object_id, name),
-        );
-        df_obj_guard.stop_and_record();
-        df_obj_resp
+
+        block_on(self.fullnode.get_dynamic_field_object(parent_object_id, name))
     }
 
     fn subscribe_event(&self, sink: SubscriptionSink, filter: EventFilter) -> SubscriptionResult {

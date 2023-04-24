@@ -20,13 +20,20 @@ use fastcrypto::hash::Digest;
 use fastcrypto::traits::ToFromBytes;
 use move_bytecode_utils::module_cache::SyncModuleCache;
 use move_core_types::identifier::Identifier;
-use prometheus::Histogram;
+// use prometheus::Histogram;
 use tracing::info;
 
 use sui_json_rpc::{ObjectProvider, ObjectProviderCache};
 use sui_json_rpc_types::{
-    CheckpointId, EpochInfo, EventFilter, EventPage, MoveCallMetrics, MoveFunctionName,
-    NetworkMetrics, SuiEvent, SuiObjectDataFilter,
+    CheckpointId, 
+    EpochInfo, 
+    EventFilter, 
+    EventPage,
+    MoveCallMetrics, 
+    MoveFunctionName,
+    NetworkMetrics, 
+    SuiEvent, 
+    SuiObjectDataFilter,
 };
 use sui_json_rpc_types::{
     SuiTransactionBlock, SuiTransactionBlockEffects, SuiTransactionBlockEffectsAPI,
@@ -44,7 +51,7 @@ use sui_types::messages_checkpoint::{
 use sui_types::object::ObjectRead;
 
 use crate::errors::{Context, IndexerError};
-use crate::metrics::IndexerMetrics;
+// use crate::metrics::IndexerMetrics;
 use crate::models::addresses::Address;
 use crate::models::checkpoints::Checkpoint;
 use crate::models::epoch::DBEpochInfo;
@@ -77,15 +84,15 @@ const MAX_EVENT_PAGE_SIZE: usize = 1000;
 const PG_COMMIT_CHUNK_SIZE: usize = 1000;
 
 const GET_PARTITION_SQL: &str = r#"
-SELECT parent.relname                           AS table_name,
-       MAX(SUBSTRING(child.relname FROM '\d$')) AS last_partition
-FROM pg_inherits
-         JOIN pg_class parent ON pg_inherits.inhparent = parent.oid
-         JOIN pg_class child ON pg_inherits.inhrelid = child.oid
-         JOIN pg_namespace nmsp_parent ON nmsp_parent.oid = parent.relnamespace
-         JOIN pg_namespace nmsp_child ON nmsp_child.oid = child.relnamespace
-WHERE parent.relkind = 'p'
-GROUP BY table_name;
+        SELECT parent.relname AS table_name,
+            MAX(SUBSTRING(child.relname FROM '\d$')) AS last_partition
+        FROM pg_inherits
+                JOIN pg_class parent ON pg_inherits.inhparent = parent.oid
+                JOIN pg_class child ON pg_inherits.inhrelid = child.oid
+                JOIN pg_namespace nmsp_parent ON nmsp_parent.oid = parent.relnamespace
+                JOIN pg_namespace nmsp_child ON nmsp_child.oid = child.relnamespace
+        WHERE parent.relkind = 'p'
+        GROUP BY table_name;
 "#;
 
 #[derive(QueryableByName, Debug, Clone)]
@@ -99,28 +106,22 @@ pub struct PgIndexerStore {
     #[allow(dead_code)]
     cp: AsyncPgConnectionPool,
     blocking_cp: PgConnectionPool,
-    // MUSTFIX(gegaowp): temporarily disable partition management.
     #[allow(dead_code)]
     partition_manager: PartitionManager,
     module_cache: Arc<SyncModuleCache<IndexerModuleResolver>>,
-    metrics: IndexerMetrics,
 }
 
 impl PgIndexerStore {
-    pub async fn new(
-        cp: AsyncPgConnectionPool,
-        blocking_cp: PgConnectionPool,
-        metrics: IndexerMetrics,
-    ) -> Self {
-        let module_cache = Arc::new(SyncModuleCache::new(IndexerModuleResolver::new(
-            blocking_cp.clone(),
-        )));
+
+    pub async fn new(async_cp: AsyncPgConnectionPool, blocking_cp: PgConnectionPool) -> Self {
+        
+        let module_cache = Arc::new(SyncModuleCache::new(IndexerModuleResolver::new(blocking_cp.clone())));
+    
         PgIndexerStore {
-            cp: cp.clone(),
+            cp: async_cp.clone(),
             blocking_cp: blocking_cp.clone(),
             partition_manager: PartitionManager::new(blocking_cp).await.unwrap(),
             module_cache,
-            metrics,
         }
     }
 
@@ -221,10 +222,7 @@ impl IndexerStore for PgIndexerStore {
         .context("Failed reading latest checkpoint sequence number from PostgresDB")
     }
 
-    async fn get_checkpoint(
-        &self,
-        id: CheckpointId,
-    ) -> Result<sui_json_rpc_types::Checkpoint, IndexerError> {
+    async fn get_checkpoint(&self, id: CheckpointId) -> Result<sui_json_rpc_types::Checkpoint, IndexerError> {
         read_only_blocking!(&self.blocking_cp, |conn| {
             let cp: Checkpoint = match id {
                 CheckpointId::SequenceNumber(seq) => checkpoints_dsl::checkpoints
@@ -301,10 +299,7 @@ impl IndexerStore for PgIndexerStore {
         )
     }
 
-    async fn get_checkpoint_sequence_number(
-        &self,
-        digest: CheckpointDigest,
-    ) -> Result<CheckpointSequenceNumber, IndexerError> {
+    async fn get_checkpoint_sequence_number(&self, digest: CheckpointDigest) -> Result<CheckpointSequenceNumber, IndexerError> {
         Ok(
             read_only_blocking!(&self.blocking_cp, |conn| checkpoints_dsl::checkpoints
                 .select(checkpoints::sequence_number)
@@ -527,10 +522,7 @@ impl IndexerStore for PgIndexerStore {
         })
     }
 
-    async fn multi_get_transactions_by_digests(
-        &self,
-        tx_digests: &[String],
-    ) -> Result<Vec<Transaction>, IndexerError> {
+    async fn multi_get_transactions_by_digests(&self, tx_digests: &[String]) -> Result<Vec<Transaction>, IndexerError> {
         read_only_blocking!(&self.blocking_cp, |conn| {
             transactions_dsl::transactions
                 .filter(transactions_dsl::transaction_digest.eq_any(tx_digests))
@@ -547,6 +539,7 @@ impl IndexerStore for PgIndexerStore {
         is_descending: bool,
     ) -> Result<Option<i64>, IndexerError> {
         read_only_blocking!(&self.blocking_cp, |conn| {
+
             if let Some(digest) = &tx_digest {
                 let mut boxed_query = transactions_dsl::transactions
                     .filter(transactions_dsl::transaction_digest.eq(digest))
@@ -568,13 +561,11 @@ impl IndexerStore for PgIndexerStore {
         ))
     }
 
-    async fn get_object(
-        &self,
-        object_id: ObjectID,
-        version: Option<SequenceNumber>,
-    ) -> Result<ObjectRead, IndexerError> {
+    async fn get_object(&self, object_id: ObjectID, version: Option<SequenceNumber>) -> Result<ObjectRead, IndexerError> {
+        
         // MUSTFIX (jian): add display field error support on implementation
         let object = read_only_blocking!(&self.blocking_cp, |conn| {
+            
             if let Some(version) = version {
                 objects_history::dsl::objects_history
                     .select((
@@ -612,13 +603,8 @@ impl IndexerStore for PgIndexerStore {
         }
     }
 
-    async fn query_objects_history(
-        &self,
-        filter: SuiObjectDataFilter,
-        at_checkpoint: CheckpointSequenceNumber,
-        cursor: Option<ObjectID>,
-        limit: usize,
-    ) -> Result<Vec<ObjectRead>, IndexerError> {
+    async fn query_objects_history(&self, filter: SuiObjectDataFilter, at_checkpoint: CheckpointSequenceNumber, cursor: Option<ObjectID>, limit: usize) -> Result<Vec<ObjectRead>, IndexerError> {
+
         let objects = read_only_blocking!(&self.blocking_cp, |conn| {
             let columns = vec![
                 "epoch",
@@ -636,9 +622,11 @@ impl IndexerStore for PgIndexerStore {
                 "storage_rebate",
                 "bcs",
             ];
-            diesel::sql_query(filter.to_objects_history_sql(cursor, limit, columns))
-                .bind::<BigInt, _>(at_checkpoint as i64)
-                .get_results::<Object>(conn)
+            diesel::sql_query(
+                filter.to_objects_history_sql(cursor, limit, columns)
+            )
+            .bind::<BigInt, _>(at_checkpoint as i64)
+            .get_results::<Object>(conn)
         })?;
 
         objects
@@ -654,27 +642,32 @@ impl IndexerStore for PgIndexerStore {
         cursor: Option<ObjectID>,
         limit: usize,
     ) -> Result<Vec<ObjectRead>, IndexerError> {
-        let columns = vec![
-            "epoch",
-            "checkpoint",
-            "object_id",
-            "version",
-            "object_digest",
-            "owner_type",
-            "owner_address",
-            "initial_shared_version",
-            "previous_transaction",
-            "object_type",
-            "object_status",
-            "has_public_transfer",
-            "storage_rebate",
-            "bcs",
-        ];
+        
+        let objects = read_only_blocking!(&self.blocking_cp, |conn| {
+            
+            let columns = vec![
+                "epoch",
+                "checkpoint",
+                "object_id",
+                "version",
+                "object_digest",
+                "owner_type",
+                "owner_address",
+                "initial_shared_version",
+                "previous_transaction",
+                "object_type",
+                "object_status",
+                "has_public_transfer",
+                "storage_rebate",
+                "bcs",
+            ];
+            
+            diesel::sql_query(
+                filter.to_latest_objects_sql(cursor, limit, columns)
+            )
+            .get_results::<Object>(conn)
 
-        let objects = read_only_blocking!(&self.blocking_cp, |conn| diesel::sql_query(
-            filter.to_latest_objects_sql(cursor, limit, columns)
-        )
-        .get_results::<Object>(conn))?;
+        })?;
 
         objects
             .into_iter()
@@ -687,6 +680,7 @@ impl IndexerStore for PgIndexerStore {
         tx_digest: Option<String>,
         is_descending: bool,
     ) -> Result<Option<i64>, IndexerError> {
+
         read_only_blocking!(&self.blocking_cp, |conn| {
             if let Some(digest) = &tx_digest {
                 let mut boxed_query = move_calls_dsl::move_calls
@@ -704,9 +698,7 @@ impl IndexerStore for PgIndexerStore {
             }
             .transpose()
         })
-        .context(&format!(
-            "Failed reading move call sequence with digest {tx_digest:?}"
-        ))
+        .context(&format!("Failed reading move call sequence with digest {tx_digest:?}"))
     }
 
     async fn get_input_object_sequence_by_digest(
@@ -714,6 +706,7 @@ impl IndexerStore for PgIndexerStore {
         tx_digest: Option<String>,
         is_descending: bool,
     ) -> Result<Option<i64>, IndexerError> {
+
         read_only_blocking!(&self.blocking_cp, |conn| {
             if let Some(digest) = &tx_digest {
                 let mut boxed_query = input_objects_dsl::input_objects
@@ -976,9 +969,6 @@ impl IndexerStore for PgIndexerStore {
         limit: usize,
         is_descending: bool,
     ) -> Result<Vec<Transaction>, IndexerError> {
-        // note: module_name and function_name are user-controlled, which is scary.
-        // however, but valid Move identifiers can only contain 0-9, a-z, A-Z, and _,
-        // so it is safe to use them as-is in the query below
         let sql_query = format!(
             "SELECT transaction_digest as digest_name FROM (
                 SELECT transaction_digest, max(id) AS max_id
@@ -1122,16 +1112,11 @@ impl IndexerStore for PgIndexerStore {
                 conn,
                 tx_object_changes.changed_objects,
                 deleted_objects,
-                None,
-                None,
             )
         })
     }
 
-    fn persist_all_checkpoint_data(
-        &self,
-        data: &TemporaryCheckpointStore,
-    ) -> Result<usize, IndexerError> {
+    fn persist_all_checkpoint_data(&self, data: &TemporaryCheckpointStore) -> Result<usize, IndexerError> {
         let TemporaryCheckpointStore {
             checkpoint,
             transactions,
@@ -1186,7 +1171,7 @@ impl IndexerStore for PgIndexerStore {
                 .iter()
                 .map(|deleted_object| deleted_object.clone().into())
                 .collect();
-            persist_transaction_object_changes(conn, mutated_objects, deleted_objects, None, None)?;
+            persist_transaction_object_changes(conn, mutated_objects, deleted_objects)?;
 
             // Commit indexed addresses
             for addresses_chunk in addresses.chunks(PG_COMMIT_CHUNK_SIZE) {
@@ -1241,10 +1226,10 @@ impl IndexerStore for PgIndexerStore {
 
             // update epoch transaction count
             let sql = "UPDATE epochs e1
-SET epoch_total_transactions = e2.epoch_total_transactions + $1
-FROM epochs e2
-WHERE e1.epoch = e2.epoch
-  AND e1.epoch = $2;";
+                SET epoch_total_transactions = e2.epoch_total_transactions + $1
+                FROM epochs e2
+                WHERE e1.epoch = e2.epoch
+                AND e1.epoch = $2;";
             diesel::sql_query(sql)
                 .bind::<BigInt, _>(checkpoint.transactions.len() as i64)
                 .bind::<BigInt, _>(checkpoint.epoch)
@@ -1266,6 +1251,7 @@ WHERE e1.epoch = e2.epoch
         checkpoint: &Checkpoint,
         transactions: &[Transaction],
     ) -> Result<usize, IndexerError> {
+
         let trimmed_transactions = transactions
             .iter()
             .map(|t| {
@@ -1274,6 +1260,7 @@ WHERE e1.epoch = e2.epoch
                 t
             })
             .collect::<Vec<_>>();
+
         transactional_blocking!(&self.blocking_cp, |conn| {
             // Commit indexed transactions
             for transaction_chunk in trimmed_transactions.chunks(PG_COMMIT_CHUNK_SIZE) {
@@ -1292,25 +1279,26 @@ WHERE e1.epoch = e2.epoch
             }
 
             // update epoch transaction count
-            let sql = "UPDATE epochs e1
-SET epoch_total_transactions = e2.epoch_total_transactions + $1
-FROM epochs e2
-WHERE e1.epoch = e2.epoch
-  AND e1.epoch = $2;";
+            let sql = "
+                UPDATE epochs e1 
+                    SET epoch_total_transactions = e2.epoch_total_transactions + $1
+                    FROM epochs e2
+                    WHERE e1.epoch = e2.epoch AND e1.epoch = $2;
+            ";
+
             diesel::sql_query(sql)
                 .bind::<BigInt, _>(checkpoint.transactions.len() as i64)
                 .bind::<BigInt, _>(checkpoint.epoch)
                 .as_query()
                 .execute(conn)?;
-
-            // Commit indexed checkpoint last, so that if the checkpoint is committed,
-            // all related data have been committed as well.
+            
             diesel::insert_into(checkpoints::table)
                 .values(checkpoint)
                 .on_conflict_do_nothing()
                 .execute(conn)
                 .map_err(IndexerError::from)
                 .context("Failed writing checkpoint to PostgresDB")
+
         })
     }
 
@@ -1318,8 +1306,6 @@ WHERE e1.epoch = e2.epoch
         &self,
         checkpoint_seq: i64,
         tx_object_changes: &[TransactionObjectChanges],
-        object_mutation_latency: Histogram,
-        object_deletion_latency: Histogram,
     ) -> Result<(), IndexerError> {
         transactional_blocking!(&self.blocking_cp, |conn| {
             {
@@ -1346,6 +1332,7 @@ WHERE e1.epoch = e2.epoch
                         o
                     })
                     .collect::<Vec<Object>>();
+
                 let trimmed_deleted_objects = deleted_objects
                     .into_iter()
                     .map(|mut o| {
@@ -1353,20 +1340,20 @@ WHERE e1.epoch = e2.epoch
                         o
                     })
                     .collect::<Vec<Object>>();
+
                 persist_transaction_object_changes(
                     conn,
                     trimmed_mutated_objects,
                     trimmed_deleted_objects,
-                    Some(object_mutation_latency),
-                    Some(object_deletion_latency),
                 )?;
+
                 info!(
-                "Object checkpoint {} committed with {} transaction, {} mutated objects and {} deleted objects.",
-                checkpoint_seq,
-                tx_object_changes.len(),
-                mutation_count,
-                deletion_count
-            );
+                    "Object checkpoint {} committed with {} transaction, {} mutated objects and {} deleted objects.",
+                    checkpoint_seq,
+                    tx_object_changes.len(),
+                    mutation_count,
+                    deletion_count
+                );
                 Ok::<(), IndexerError>(())
             }
         })?;
@@ -1376,12 +1363,14 @@ WHERE e1.epoch = e2.epoch
     async fn persist_events(&self, events: &[Event]) -> Result<(), IndexerError> {
         transactional_blocking!(&self.blocking_cp, |conn| {
             for event_chunk in events.chunks(PG_COMMIT_CHUNK_SIZE) {
+
                 diesel::insert_into(events::table)
                     .values(event_chunk)
                     .on_conflict_do_nothing()
                     .execute(conn)
                     .map_err(IndexerError::from)
                     .context("Failed writing events to PostgresDB")?;
+
             }
             Ok::<(), IndexerError>(())
         })?;
@@ -1529,10 +1518,6 @@ WHERE e1.epoch = e2.epoch
         &self.module_cache
     }
 
-    fn indexer_metrics(&self) -> &IndexerMetrics {
-        &self.metrics
-    }
-
     async fn get_epochs(
         &self,
         cursor: Option<EpochId>,
@@ -1615,107 +1600,48 @@ fn persist_transaction_object_changes(
     conn: &mut PgConnection,
     mutated_objects: Vec<Object>,
     deleted_objects: Vec<Object>,
-    object_mutation_latency: Option<Histogram>,
-    object_deletion_latency: Option<Histogram>,
 ) -> Result<usize, IndexerError> {
-    // TODO(gegaowp): tx object changes from one tx do not need group_and_sort_objects, will optimize soon after this PR.
-    // NOTE: to avoid error of `ON CONFLICT DO UPDATE command cannot affect row a second time`,
-    // we have to limit update of one object once in a query.
-
-    // MUSTFIX(gegaowp): clean up the metrics codes after experiment
-    if let Some(object_mutation_latency) = object_mutation_latency {
-        let object_mutation_guard = object_mutation_latency.start_timer();
-        let mut mutated_object_groups = group_and_sort_objects(mutated_objects);
-        loop {
-            let mutated_object_group = mutated_object_groups
-                .iter_mut()
-                .filter_map(|group| group.pop())
-                .collect::<Vec<_>>();
-            if mutated_object_group.is_empty() {
-                break;
-            }
-            // bulk insert/update via UNNEST trick
-            let insert_update_query =
-                compose_object_bulk_insert_update_query(&mutated_object_group);
-            diesel::sql_query(insert_update_query)
-                .execute(conn)
-                .map_err(|e| {
-                    IndexerError::PostgresWriteError(format!(
-                        "Failed writing mutated objects to PostgresDB with error: {:?}",
-                        e
-                    ))
-                })?;
+    
+    let mut mutated_object_groups = group_and_sort_objects(mutated_objects);
+    loop {
+        let mutated_object_group = mutated_object_groups
+            .iter_mut()
+            .filter_map(|group| group.pop())
+            .collect::<Vec<_>>();
+        if mutated_object_group.is_empty() {
+            break;
         }
-        object_mutation_guard.stop_and_record();
-    } else {
-        let mut mutated_object_groups = group_and_sort_objects(mutated_objects);
-        loop {
-            let mutated_object_group = mutated_object_groups
-                .iter_mut()
-                .filter_map(|group| group.pop())
-                .collect::<Vec<_>>();
-            if mutated_object_group.is_empty() {
-                break;
-            }
-            // bulk insert/update via UNNEST trick
-            let insert_update_query =
-                compose_object_bulk_insert_update_query(&mutated_object_group);
-            diesel::sql_query(insert_update_query)
-                .execute(conn)
-                .map_err(|e| {
-                    IndexerError::PostgresWriteError(format!(
-                        "Failed writing mutated objects to PostgresDB with error: {:?}",
-                        e
-                    ))
-                })?;
-        }
+        // bulk insert/update via UNNEST trick
+        let insert_update_query = compose_object_bulk_insert_update_query(&mutated_object_group);
+        diesel::sql_query(insert_update_query)
+            .execute(conn)
+            .map_err(|e| {
+                IndexerError::PostgresWriteError(format!(
+                    "Failed writing mutated objects to PostgresDB with error: {:?}",
+                    e
+                ))
+            })?;
     }
 
-    // MUSTFIX(gegaowp): clean up the metrics codes after experiment
-    if let Some(object_deletion_latency) = object_deletion_latency {
-        let object_deletion_guard = object_deletion_latency.start_timer();
-        for deleted_object_change_chunk in deleted_objects.chunks(PG_COMMIT_CHUNK_SIZE) {
-            diesel::insert_into(objects::table)
-                .values(deleted_object_change_chunk)
-                .on_conflict(objects::object_id)
-                .do_update()
-                .set((
-                    objects::epoch.eq(excluded(objects::epoch)),
-                    objects::checkpoint.eq(excluded(objects::checkpoint)),
-                    objects::version.eq(excluded(objects::version)),
-                    objects::previous_transaction.eq(excluded(objects::previous_transaction)),
-                    objects::object_status.eq(excluded(objects::object_status)),
+    for deleted_object_change_chunk in deleted_objects.chunks(PG_COMMIT_CHUNK_SIZE) {
+        diesel::insert_into(objects::table)
+            .values(deleted_object_change_chunk)
+            .on_conflict(objects::object_id)
+            .do_update()
+            .set((
+                objects::epoch.eq(excluded(objects::epoch)),
+                objects::checkpoint.eq(excluded(objects::checkpoint)),
+                objects::version.eq(excluded(objects::version)),
+                objects::previous_transaction.eq(excluded(objects::previous_transaction)),
+                objects::object_status.eq(excluded(objects::object_status)),
+            ))
+            .execute(conn)
+            .map_err(|e| {
+                IndexerError::PostgresWriteError(format!(
+                    "Failed writing deleted objects to PostgresDB with error: {:?}",
+                    e
                 ))
-                .execute(conn)
-                .map_err(|e| {
-                    IndexerError::PostgresWriteError(format!(
-                        "Failed writing deleted objects to PostgresDB with error: {:?}",
-                        e
-                    ))
-                })?;
-        }
-        object_deletion_guard.stop_and_record();
-    } else {
-        for deleted_object_change_chunk in deleted_objects.chunks(PG_COMMIT_CHUNK_SIZE) {
-            diesel::insert_into(objects::table)
-                .values(deleted_object_change_chunk)
-                .on_conflict(objects::object_id)
-                .do_update()
-                .set((
-                    objects::epoch.eq(excluded(objects::epoch)),
-                    objects::checkpoint.eq(excluded(objects::checkpoint)),
-                    objects::version.eq(excluded(objects::version)),
-                    objects::previous_transaction.eq(excluded(objects::previous_transaction)),
-                    objects::object_status.eq(excluded(objects::object_status)),
-                ))
-                .execute(conn)
-                .map_err(|e| {
-                    IndexerError::PostgresWriteError(format!(
-                        "Failed writing deleted objects to PostgresDB with error: {:?}",
-                        e
-                    ))
-                })?;
-        }
+            })?;
     }
     Ok(0)
 }
@@ -1730,11 +1656,7 @@ impl PartitionManager {
         // Find all tables with partition
         let manager = Self { cp };
         let tables = manager.get_table_partitions().await?;
-        info!(
-            "Found {} tables with partitions : [{:?}]",
-            tables.len(),
-            tables
-        );
+        info!("Found {} tables with partitions : [{:?}]", tables.len(), tables);
         Ok(manager)
     }
 
@@ -1778,6 +1700,7 @@ impl PartitionManager {
     }
 
     async fn get_table_partitions(&self) -> Result<BTreeMap<String, u64>, IndexerError> {
+
         #[derive(QueryableByName, Debug, Clone)]
         struct PartitionedTable {
             #[diesel(sql_type = VarChar)]
@@ -1787,17 +1710,14 @@ impl PartitionManager {
         }
 
         Ok(
-            read_only_blocking!(&self.cp, |conn| diesel::RunQueryDsl::load(
-                diesel::sql_query(GET_PARTITION_SQL),
-                conn
-            ))?
+            read_only_blocking!(&self.cp, |conn| diesel::RunQueryDsl::load(diesel::sql_query(GET_PARTITION_SQL), conn))?
             .into_iter()
             .map(|table: PartitionedTable| {
                 u64::from_str(&table.last_partition)
                     .map(|last_partition| (table.table_name, last_partition))
                     .map_err(|e| anyhow!(e))
             })
-            .collect::<Result<_, _>>()?,
+            .collect::<Result<_, _>>()?
         )
     }
 }
@@ -1814,26 +1734,12 @@ async fn get_network_metrics_cached(cp: &PgConnectionPool) -> Result<NetworkMetr
 #[async_trait]
 impl ObjectProvider for PgIndexerStore {
     type Error = IndexerError;
-    fn get_object(
-        &self,
-        _id: &ObjectID,
-        _version: &SequenceNumber,
-    ) -> Result<sui_types::object::Object, Self::Error> {
-        Err(IndexerError::NotSupportedError(
-            "Object cache is not supported".to_string(),
-        ))
-        // self.get_sui_types_object(id, version)
+
+    fn get_object(&self, _id: &ObjectID, _version: &SequenceNumber) -> Result<sui_types::object::Object, Self::Error> {
+        Err(IndexerError::NotSupportedError("Object cache is not supported".to_string() ))
     }
 
-    fn find_object_lt_or_eq_version(
-        &self,
-        _id: &ObjectID,
-        _version: &SequenceNumber,
-    ) -> Result<Option<sui_types::object::Object>, Self::Error> {
-        Err(IndexerError::NotSupportedError(
-            "find_object_lt_or_eq_version is not supported".to_string(),
-        ))
-        // self.find_sui_types_object_lt_or_eq_version(id, version)
-        //     .await
+    fn find_object_lt_or_eq_version(&self, _id: &ObjectID, _version: &SequenceNumber) -> Result<Option<sui_types::object::Object>, Self::Error> {
+        Err(IndexerError::NotSupportedError("find_object_lt_or_eq_version is not supported".to_string() ))
     }
 }

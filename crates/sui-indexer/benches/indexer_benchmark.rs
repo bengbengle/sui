@@ -41,12 +41,11 @@ fn indexer_benchmark(c: &mut Criterion) {
     let (mut checkpoints, store) = rt.block_on(async {
         let (blocking_cp, async_cp) = new_pg_connection_pool(&db_url).await.unwrap();
         reset_database(&mut blocking_cp.get().unwrap(), true).unwrap();
-        let registry = Registry::default();
-        let indexer_metrics = IndexerMetrics::new(&registry);
 
-        let store = PgIndexerStore::new(async_cp, blocking_cp, indexer_metrics).await;
+        let store = PgIndexerStore::new(async_cp, blocking_cp).await;
 
         let checkpoints = (0..150).map(create_checkpoint).collect::<Vec<_>>();
+        
         (checkpoints, store)
     });
 

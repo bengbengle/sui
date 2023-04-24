@@ -44,12 +44,12 @@ impl DBFilter<ObjectID> for SuiObjectDataFilter {
         // we will pick that over the one from fast-path, which has checkpoint of -1.
         format!(
             "SELECT {columns}
-FROM (SELECT DISTINCT ON (o.object_id) *
-      FROM objects_history o
-      WHERE o.checkpoint <= $1{cursor}{inner_clauses}
-      ORDER BY o.object_id, version, o.checkpoint DESC) AS t1
-WHERE t1.object_status NOT IN ('deleted', 'wrapped', 'unwrapped_then_deleted'){outer_clauses}
-LIMIT {limit};"
+                FROM (SELECT DISTINCT ON (o.object_id) *
+                    FROM objects_history o
+                    WHERE o.checkpoint <= $1{cursor}{inner_clauses}
+                    ORDER BY o.object_id, version, o.checkpoint DESC) AS t1
+                WHERE t1.object_status NOT IN ('deleted', 'wrapped', 'unwrapped_then_deleted'){outer_clauses}
+                LIMIT {limit};"
         )
     }
 
